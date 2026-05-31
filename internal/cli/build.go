@@ -1,16 +1,17 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
+
+	"github.com/sxijyoti/whiskey/internal/build"
 )
 
 var buildCmd = &cobra.Command{
-	Use:   "build",
-	Short: "Build the site",
+	Use:   "build <input.md> <output.html>",
+	Short: "Build a markdown file",
+	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Building the site...")
-		return nil
+		return build.BuildPage(args[0], args[1])
 	},
 }
 
