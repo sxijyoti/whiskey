@@ -2,37 +2,43 @@ package build
 
 import (
 	htmltemplate "html/template"
-	"path/filepath"
 	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/template"
-	
 )
 
-func BuildPage(input, output string) error {
-	raw,err := os.ReadFile(input)
-
+func BuildPage(siteRoot string, doc *parser.Document, output string) error {
+	html, err := parser.MdToHTML(doc.Body)
 	if err != nil {
 		return err
 	}
 
-	doc,err := parser.ParseFrontmatter(raw)
-	if err != nil {
-		return err
-	}
-	
-	html,err := parser.MdToHTML(doc.Body)
-	if err != nil {
-		return err
+	layout := doc.Meta.Layout
+	if layout == "" {
+		layout = "page"
 	}
 
-	page,err := template.RenderPage(template.PageData{
-		Title: doc.Meta.Title,
-		Content: htmltemplate.HTML(html),
-	})
+	var date string
+	if !doc.Meta.Date.IsZero() {
+		date = doc.Meta.Date.Format("2006-01-02")
+	}
+
+	page, err := template.RenderPage(
+		siteRoot,
+		layout,
+		template.PageData{
+			Title:       doc.Meta.Title,
+			Description: doc.Meta.Description,
+			Date:        date,
+			Content:     htmltemplate.HTML(html),
+		},
+	)
 	if err != nil {
 		return err
-	}	
+	}
 
 	if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
 		return err
@@ -40,5 +46,68 @@ func BuildPage(input, output string) error {
 
 	return os.WriteFile(output, page, 0644)
 
+}
 
+func BuildSite(root string) error {
+	contentRoot := filepath.Join(root, "content")
+
+	pages, err := DiscoverPages(contentRoot)
+	if err != nil {
+		return err
+	}
+
+	for _, page := range pages {
+		rel, err := filepath.Rel(contentRoot, page)
+		if err != nil {
+			return err
+		}
+
+		raw, err := os.ReadFile(page)
+		if err != nil {
+			return err
+		}
+
+		doc, err := parser.ParseFrontmatter(raw)
+		if err != nil {
+			return err
+		}
+
+		if doc.Meta.Draft {
+			continue
+		}
+
+		slug := strings.TrimSuffix(
+			rel,
+			filepath.Ext(rel),
+		)
+
+		var output string
+
+		if slug == "index" {
+			output = filepath.Join(
+				"dist",
+				"index.html",
+			)
+		} else {
+			output = filepath.Join(
+				"dist",
+				slug,
+				"index.html",
+			)
+		}
+
+		if err := BuildPage(
+			root,
+			doc,
+			output,
+		); err != nil {
+			return err
+		}
+	}
+
+	if err := CopyStatic(root); err != nil {
+	return err
+	}
+
+	return nil
 }

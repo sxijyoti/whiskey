@@ -1,20 +1,34 @@
 package template
 
 import (
-	htmltemplate "html/template"
 	"bytes"
+	htmltemplate "html/template"
 )
 
 type PageData struct {
-	Title   string
-	Content htmltemplate.HTML
+	Title       string
+	Description string
+	Date        string
+	Content     htmltemplate.HTML
 }
 
-func RenderPage(data PageData) ([]byte, error) {
+func RenderPage(
+	siteRoot string,
+	layout string,
+	data PageData,
+) ([]byte, error) {
+
+	tmpl, err := LoadLayout(
+		siteRoot,
+		layout,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	var buf bytes.Buffer
 
-	err := Page.Execute(&buf, data)
+	err = tmpl.Execute(&buf, data)
 
 	return buf.Bytes(), err
 }
-

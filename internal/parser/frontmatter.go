@@ -3,14 +3,18 @@ package parser
 import (
 	"strings"
 	"gopkg.in/yaml.v3"
+	"time"
 )
 
 type Frontmatter struct {
 	Title       string   `yaml:"title"`
-	// Description string   `yaml:"description"`
-	// Date        string   `yaml:"date"`
-	// Tags        []string `yaml:"tags"`
+	Description string   `yaml:"description"`
+	Date        time.Time   `yaml:"date"`
+	Tags        []string `yaml:"tags"`
+	Layout 	    string   `yaml:"layout"`
+	Draft	    bool     `yaml:"draft"`
 }
+
 
 type Document struct {
 	Meta Frontmatter

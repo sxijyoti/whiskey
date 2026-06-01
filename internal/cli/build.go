@@ -7,11 +7,17 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use:   "build <input.md> <output.html>",
-	Short: "Build a markdown file",
-	Args:  cobra.ExactArgs(2),
+	Use:   "build",
+	Short: "Build the site",
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return build.BuildPage(args[0], args[1])
+		root := "site"
+
+		if len(args) == 1 {
+			root = args[0]
+		}
+
+		return build.BuildSite(root)
 	},
 }
 
