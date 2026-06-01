@@ -1,3 +1,0 @@
-# Whiskey
-
-This is whiskey!
