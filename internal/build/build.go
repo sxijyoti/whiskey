@@ -30,7 +30,7 @@ func BuildPage(input, output string) error {
 	page,err := template.RenderPage(template.PageData{
 		Title: doc.Meta.Title,
 		Description: doc.Meta.Description,
-		Date: doc.Meta.Date.Format("2026-06-02"),
+		Date: doc.Meta.Date.Format("2006-01-02"),
 		Content: htmltemplate.HTML(html),
 	})
 	if err != nil {
@@ -45,14 +45,14 @@ func BuildPage(input, output string) error {
 
 }
 
-func BuildSite() error {
-	pages, err := DiscoverPages("site")
+func BuildSite(root string) error {
+	pages, err := DiscoverPages(root)
 	if err != nil {
 		return err
 	}
 
 	for _, page := range pages {
-	rel, err := filepath.Rel("site", page)
+	rel, err := filepath.Rel(root, page)
 	if err != nil {
 		return err
 	}
