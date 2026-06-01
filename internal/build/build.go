@@ -10,18 +10,7 @@ import (
 	"github.com/sxijyoti/whiskey/internal/template"
 )
 
-func BuildPage(siteRoot string, input string, output string) error {
-	raw, err := os.ReadFile(input)
-
-	if err != nil {
-		return err
-	}
-
-	doc, err := parser.ParseFrontmatter(raw)
-	if err != nil {
-		return err
-	}
-
+func BuildPage(siteRoot string, doc *parser.Document, output string) error {
 	html, err := parser.MdToHTML(doc.Body)
 	if err != nil {
 		return err
@@ -32,13 +21,18 @@ func BuildPage(siteRoot string, input string, output string) error {
 		layout = "page"
 	}
 
+	var date string
+	if !doc.Meta.Date.IsZero() {
+		date = doc.Meta.Date.Format("2006-01-02")
+	}
+
 	page, err := template.RenderPage(
 		siteRoot,
 		layout,
 		template.PageData{
 			Title:       doc.Meta.Title,
 			Description: doc.Meta.Description,
-			Date:        doc.Meta.Date.Format("2006-01-02"),
+			Date:        date,
 			Content:     htmltemplate.HTML(html),
 		},
 	)
@@ -82,23 +76,37 @@ func BuildSite(root string) error {
 			continue
 		}
 
-		out := strings.TrimSuffix(
+		slug := strings.TrimSuffix(
 			rel,
 			filepath.Ext(rel),
-		) + ".html"
-
-		output := filepath.Join(
-			"dist",
-			out,
 		)
+
+		var output string
+
+		if slug == "index" {
+			output = filepath.Join(
+				"dist",
+				"index.html",
+			)
+		} else {
+			output = filepath.Join(
+				"dist",
+				slug,
+				"index.html",
+			)
+		}
 
 		if err := BuildPage(
 			root,
-			page,
+			doc,
 			output,
 		); err != nil {
 			return err
 		}
+	}
+
+	if err := CopyStatic(root); err != nil {
+	return err
 	}
 
 	return nil
