@@ -4,6 +4,7 @@ import (
 	htmltemplate "html/template"
 	"path/filepath"
 	"os"
+	"strings"
 	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/template"
 	
@@ -40,5 +41,34 @@ func BuildPage(input, output string) error {
 
 	return os.WriteFile(output, page, 0644)
 
+}
 
+func BuildSite() error {
+	pages, err := DiscoverPages("site")
+	if err != nil {
+		return err
+	}
+
+	for _, page := range pages {
+		rel, err := filepath.Rel("site", page)
+		if err != nil {
+			return err
+		}
+
+		out := strings.TrimSuffix(
+			rel,
+			filepath.Ext(rel),
+		) + ".html"
+
+		output := filepath.Join(
+			"dist",
+			out,
+		)
+
+		if err := BuildPage(page, output); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

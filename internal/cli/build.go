@@ -7,11 +7,10 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use:   "build <input.md> <output.html>",
-	Short: "Build a markdown file",
-	Args:  cobra.ExactArgs(2),
+	Use:   "build",
+	Short: "Build the site",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return build.BuildPage(args[0], args[1])
+		return build.BuildSite()
 	},
 }
 
