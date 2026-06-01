@@ -8,6 +8,10 @@ var Page = template.Must(template.New("page").Parse(`
 <head>
 	<meta charset="UTF-8">
 	<title>{{ .Title }}</title>
+	<meta
+		name="description"
+		content="{{ .Description }}"
+	>
 </head>
 <body>
 	{{ .Content }}

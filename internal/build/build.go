@@ -29,6 +29,8 @@ func BuildPage(input, output string) error {
 
 	page,err := template.RenderPage(template.PageData{
 		Title: doc.Meta.Title,
+		Description: doc.Meta.Description,
+		Date: doc.Meta.Date.Format("2026-06-02"),
 		Content: htmltemplate.HTML(html),
 	})
 	if err != nil {
@@ -50,25 +52,38 @@ func BuildSite() error {
 	}
 
 	for _, page := range pages {
-		rel, err := filepath.Rel("site", page)
-		if err != nil {
-			return err
-		}
-
-		out := strings.TrimSuffix(
-			rel,
-			filepath.Ext(rel),
-		) + ".html"
-
-		output := filepath.Join(
-			"dist",
-			out,
-		)
-
-		if err := BuildPage(page, output); err != nil {
-			return err
-		}
+	rel, err := filepath.Rel("site", page)
+	if err != nil {
+		return err
 	}
+
+	raw, err := os.ReadFile(page)
+	if err != nil {
+		return err
+	}
+
+	doc, err := parser.ParseFrontmatter(raw)
+	if err != nil {
+		return err
+	}
+
+	if doc.Meta.Draft {
+		continue
+	}
+
+	out := strings.TrimSuffix(
+		rel,
+		filepath.Ext(rel),
+	) + ".html"
+
+	output := filepath.Join(
+		"dist",
+		out,
+	)
+
+	if err := BuildPage(page, output); err != nil {
+		return err
+	}}
 
 	return nil
 }
