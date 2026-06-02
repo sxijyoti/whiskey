@@ -1,19 +1,15 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>{{ .Title }}</title>
-    <link rel="stylesheet" href="/css/main.css">
-</head>
-<body>
+{{ define "content" }}
 
 <article>
-    <h1>{{ .Title }}</h1>
 
-    <small>{{ .Date }}</small>
+<h1>{{ .Title }}</h1>
 
-    {{ .Content }}
+{{ if .Date }}
+<small>{{ .Date }}</small>
+{{ end }}
+
+{{ .Content }}
+
 </article>
 
-</body>
-</html>
+{{ end }}
