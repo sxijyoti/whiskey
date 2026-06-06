@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -63,14 +64,24 @@ var serveCmd = &cobra.Command{
 		}
 
 		debouncer := watcher.NewDebouncer(
-			750 * time.Millisecond,
+			30000 * time.Millisecond,
 		)
 
 		go func() {
 			for {
 				select {
 
-				case event := <-w.Events:
+				case event, ok := <-w.Events:
+
+					if !ok {
+						return
+					}
+
+					if watcher.IgnoreFile(
+						event.Name,
+					) {
+						continue
+					}
 
 					if event.Op&(fsnotify.Write|
 						fsnotify.Create|
@@ -79,31 +90,69 @@ var serveCmd = &cobra.Command{
 						continue
 					}
 
+					// watch newly-created directories
+					if event.Op&fsnotify.Create != 0 {
+
+						info, err := os.Stat(
+							event.Name,
+						)
+
+						if err == nil &&
+							info.IsDir() {
+
+							_ = watcher.WatchRecursive(
+								w,
+								event.Name,
+							)
+						}
+					}
+
 					fmt.Printf(
-						"[watch] changed: %s\n",
-						event.Name,
+						"[watch] queued: %s\n",
+						filepath.Base(
+							event.Name,
+						),
 					)
 
-					debouncer.Run(func() {
+					debouncer.Run(
+						func() {
 
-						fmt.Println(
-							"[watch] rebuilding...",
-						)
+							start := time.Now()
 
-						if err := build.BuildSite(root); err != nil {
-							fmt.Println(err)
-							return
-						}
+							fmt.Println(
+								"[watch] rebuilding...",
+							)
 
-						fmt.Println(
-							"[watch] build complete",
-						)
+							if err := build.BuildSite(root); err != nil {
 
-						reloader.Broadcast()
-					})
+								fmt.Printf(
+									"[watch] build failed: %v\n",
+									err,
+								)
 
-				case err := <-w.Errors:
-					fmt.Println(err)
+								return
+							}
+
+							fmt.Printf(
+								"[watch] build complete (%v)\n",
+								time.Since(start).
+									Round(time.Millisecond),
+							)
+
+							reloader.Broadcast()
+						},
+					)
+
+				case err, ok := <-w.Errors:
+
+					if !ok {
+						return
+					}
+
+					fmt.Printf(
+						"[watch] error: %v\n",
+						err,
+					)
 				}
 			}
 		}()
@@ -115,7 +164,9 @@ var serveCmd = &cobra.Command{
 
 		http.Handle(
 			"/",
-			devserver.NewFileHandler("dist"),
+			devserver.NewFileHandler(
+				"dist",
+			),
 		)
 
 		fmt.Printf(
@@ -125,13 +176,17 @@ var serveCmd = &cobra.Command{
 		)
 
 		return http.ListenAndServe(
-			fmt.Sprintf(":%d", port),
+			fmt.Sprintf(
+				":%d",
+				port,
+			),
 			nil,
 		)
 	},
 }
 
 func init() {
+
 	serveCmd.Flags().IntVarP(
 		&port,
 		"port",
