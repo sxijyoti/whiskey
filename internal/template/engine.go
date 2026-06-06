@@ -6,11 +6,7 @@ import (
 	"path/filepath"
 )
 
-func LoadLayout(
-	siteRoot string,
-	layout string,
-) (*template.Template, error) {
-
+func layoutFile(siteRoot, layout string) string {
 	siteLayout := filepath.Join(
 		siteRoot,
 		"layouts",
@@ -18,15 +14,56 @@ func LoadLayout(
 	)
 
 	if _, err := os.Stat(siteLayout); err == nil {
-		return template.ParseFiles(siteLayout)
+		return siteLayout
 	}
 
-	defaultLayout := filepath.Join(
+	return filepath.Join(
 		"themes",
 		"default",
 		"layouts",
 		layout+".html",
 	)
+}
 
-	return template.ParseFiles(defaultLayout)
+func LoadLayout(
+	siteRoot string,
+	layout string,
+) (*template.Template, error) {
+
+	base := filepath.Join(
+		"themes",
+		"default",
+		"layouts",
+		"base.html",
+	)
+
+	layoutPath := layoutFile(
+		siteRoot,
+		layout,
+	)
+
+	partials, err := filepath.Glob(
+		filepath.Join(
+			"themes",
+			"default",
+			"layouts",
+			"partials",
+			"*.html",
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	files := []string{
+		base,
+		layoutPath,
+	}
+
+	files = append(
+		files,
+		partials...,
+	)
+
+	return template.ParseFiles(files...)
 }

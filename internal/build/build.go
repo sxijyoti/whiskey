@@ -6,11 +6,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/template"
 )
 
-func BuildPage(siteRoot string, doc *parser.Document, output string) error {
+func BuildPage(
+	siteRoot string,
+	cfg *config.Config,
+	doc *parser.Document,
+	output string,
+) error {
+
 	html, err := parser.MdToHTML(doc.Body)
 	if err != nil {
 		return err
@@ -22,14 +29,18 @@ func BuildPage(siteRoot string, doc *parser.Document, output string) error {
 	}
 
 	var date string
+
 	if !doc.Meta.Date.IsZero() {
-		date = doc.Meta.Date.Format("2006-01-02")
+		date = doc.Meta.Date.Format(
+			"2006-01-02",
+		)
 	}
 
 	page, err := template.RenderPage(
 		siteRoot,
 		layout,
 		template.PageData{
+			Site:        cfg,
 			Title:       doc.Meta.Title,
 			Description: doc.Meta.Description,
 			Date:        date,
@@ -40,24 +51,45 @@ func BuildPage(siteRoot string, doc *parser.Document, output string) error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
+	if err := os.MkdirAll(
+		filepath.Dir(output),
+		0755,
+	); err != nil {
 		return err
 	}
 
-	return os.WriteFile(output, page, 0644)
-
+	return os.WriteFile(
+		output,
+		page,
+		0644,
+	)
 }
 
 func BuildSite(root string) error {
-	contentRoot := filepath.Join(root, "content")
 
-	pages, err := DiscoverPages(contentRoot)
+	cfg, err := config.Load(root)
+	if err != nil {
+		return err
+	}
+
+	contentRoot := filepath.Join(
+		root,
+		"content",
+	)
+
+	pages, err := DiscoverPages(
+		contentRoot,
+	)
 	if err != nil {
 		return err
 	}
 
 	for _, page := range pages {
-		rel, err := filepath.Rel(contentRoot, page)
+
+		rel, err := filepath.Rel(
+			contentRoot,
+			page,
+		)
 		if err != nil {
 			return err
 		}
@@ -84,11 +116,14 @@ func BuildSite(root string) error {
 		var output string
 
 		if slug == "index" {
+
 			output = filepath.Join(
 				"dist",
 				"index.html",
 			)
+
 		} else {
+
 			output = filepath.Join(
 				"dist",
 				slug,
@@ -98,6 +133,7 @@ func BuildSite(root string) error {
 
 		if err := BuildPage(
 			root,
+			cfg,
 			doc,
 			output,
 		); err != nil {
@@ -106,7 +142,7 @@ func BuildSite(root string) error {
 	}
 
 	if err := CopyStatic(root); err != nil {
-	return err
+		return err
 	}
 
 	return nil
