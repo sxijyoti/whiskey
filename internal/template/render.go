@@ -3,9 +3,11 @@ package template
 import (
 	"bytes"
 	htmltemplate "html/template"
+	"github.com/sxijyoti/whiskey/internal/config"
 )
 
 type PageData struct {
+	Site        *config.Config
 	Title       string
 	Description string
 	Date        string
