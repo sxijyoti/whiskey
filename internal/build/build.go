@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/config"
+	"github.com/sxijyoti/whiskey/internal/dependency"
 	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/template"
 )
@@ -18,7 +19,16 @@ func BuildPage(
 	output string,
 ) error {
 
-	html, err := parser.MdToHTML(doc.Body)
+	resolvedBody, err := dependency.ResolveIncludes(
+		doc.Body,
+	)
+	if err != nil {
+		return err
+	}
+
+	html, err := parser.MdToHTML(
+		resolvedBody,
+	)
 	if err != nil {
 		return err
 	}
