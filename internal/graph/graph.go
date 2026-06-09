@@ -9,18 +9,18 @@ const (
 )
 
 type Node struct {
-	ID   string
-	Type NodeType
+	ID   string   `json:"id"`
+	Type NodeType `json:"type"`
 }
 
 type Edge struct {
-	From string
-	To   string
+	From string `json:"from"`
+	To   string `json:"to"`
 }
 
 type Graph struct {
-	Nodes map[string]*Node
-	Edges []Edge
+	Nodes map[string]*Node `json:"nodes"`
+	Edges []Edge           `json:"edges"`
 }
 
 func New() *Graph {
@@ -56,4 +56,42 @@ func (g *Graph) AddEdge(
 			To:   to,
 		},
 	)
+}
+
+func (g *Graph) Dependencies(
+	id string,
+) []string {
+
+	var deps []string
+
+	for _, edge := range g.Edges {
+
+		if edge.From == id {
+			deps = append(
+				deps,
+				edge.To,
+			)
+		}
+	}
+
+	return deps
+}
+
+func (g *Graph) Dependents(
+	id string,
+) []string {
+
+	var deps []string
+
+	for _, edge := range g.Edges {
+
+		if edge.To == id {
+			deps = append(
+				deps,
+				edge.From,
+			)
+		}
+	}
+
+	return deps
 }
