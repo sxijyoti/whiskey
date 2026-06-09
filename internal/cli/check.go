@@ -6,7 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/sxijyoti/whiskey/internal/fingerprint"
 	"github.com/sxijyoti/whiskey/internal/graph"
+	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 var checkCmd = &cobra.Command{
@@ -31,15 +33,19 @@ var checkCmd = &cobra.Command{
 				"content",
 			),
 		)
+		if err != nil {
+			return err
+		}
 
+		store, err := fingerprint.Load(
+			".whiskey/fingerprints.json",
+		)
 		if err != nil {
 			return err
 		}
 
 		fmt.Println()
-		fmt.Println(
-			"Dependency Graph",
-		)
+		fmt.Println("Dependency Graph")
 		fmt.Println()
 
 		for _, edge := range g.Edges {
@@ -53,6 +59,67 @@ var checkCmd = &cobra.Command{
 				" └── %s\n\n",
 				edge.To,
 			)
+		}
+
+		fmt.Println("Fingerprints")
+		fmt.Println()
+
+		for _, node := range g.Nodes {
+
+			if node.Type != graph.SourceNode {
+				continue
+			}
+
+			src, err := source.Resolve(
+				node.ID,
+			)
+
+			if err != nil {
+				fmt.Printf(
+					"%s error=%v\n",
+					node.ID,
+					err,
+				)
+				continue
+			}
+
+			hash, err := fingerprint.FingerprintSource(
+				src,
+			)
+
+			if err != nil {
+				fmt.Printf(
+					"%s error=%v\n",
+					node.ID,
+					err,
+				)
+				continue
+			}
+
+			changed := fingerprint.Changed(
+				store,
+				node.ID,
+				hash,
+			)
+
+			fmt.Printf(
+				"%s\n",
+				node.ID,
+			)
+
+			fmt.Printf(
+				" changed: %v\n\n",
+				changed,
+			)
+
+			store[node.ID] = hash
+		}
+
+		if err := fingerprint.Save(
+			".whiskey/fingerprints.json",
+			store,
+		); err != nil {
+			return err
 		}
 
 		return nil
