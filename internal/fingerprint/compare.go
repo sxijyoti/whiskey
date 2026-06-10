@@ -12,5 +12,5 @@ func Changed(
 		return true
 	}
 
-	return old != hash
+	return old.Hash != hash
 }
