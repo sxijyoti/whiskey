@@ -8,7 +8,7 @@ import (
 
 	"github.com/sxijyoti/whiskey/internal/fingerprint"
 	"github.com/sxijyoti/whiskey/internal/graph"
-	"github.com/sxijyoti/whiskey/internal/source"
+	"github.com/sxijyoti/whiskey/internal/planner"
 )
 
 var checkCmd = &cobra.Command{
@@ -61,68 +61,59 @@ var checkCmd = &cobra.Command{
 			)
 		}
 
-		fmt.Println("Fingerprints")
-		fmt.Println()
-
-		for _, node := range g.Nodes {
-
-			if node.Type != graph.SourceNode {
-				continue
-			}
-
-			src, err := source.Resolve(
-				node.ID,
-			)
-
-			if err != nil {
-				fmt.Printf(
-					"%s error=%v\n",
-					node.ID,
-					err,
-				)
-				continue
-			}
-
-			hash, err := fingerprint.FingerprintSource(
-				src,
-			)
-
-			if err != nil {
-				fmt.Printf(
-					"%s error=%v\n",
-					node.ID,
-					err,
-				)
-				continue
-			}
-
-			changed := fingerprint.Changed(
-				store,
-				node.ID,
-				hash,
-			)
-
-			fmt.Printf(
-				"%s\n",
-				node.ID,
-			)
-
-			fmt.Printf(
-				" changed: %v\n\n",
-				changed,
-			)
-
-			store[node.ID] = hash
-		}
-
-		if err := fingerprint.Save(
-			".whiskey/fingerprints.json",
+		changed, err := fingerprint.ChangedSources(
+			g,
 			store,
-		); err != nil {
+		)
+		if err != nil {
 			return err
 		}
 
-		return nil
+		fmt.Println("Changed Sources")
+		fmt.Println()
+
+		if len(changed) == 0 {
+
+			fmt.Println("(none)")
+			fmt.Println()
+
+		} else {
+
+			for _, src := range changed {
+
+				fmt.Println(src)
+			}
+
+			fmt.Println()
+		}
+
+		dirty := planner.DirtyPages(
+			g,
+			changed,
+		)
+
+		fmt.Println("Dirty Pages")
+		fmt.Println()
+
+		if len(dirty) == 0 {
+
+			fmt.Println("(none)")
+			fmt.Println()
+
+		} else {
+
+			for _, page := range dirty {
+
+				fmt.Println(page)
+			}
+
+			fmt.Println()
+		}
+
+		return fingerprint.Save(
+			".whiskey/fingerprints.json",
+			store,
+		)
 	},
 }
 
