@@ -30,7 +30,7 @@ var serveCmd = &cobra.Command{
 			root = args[0]
 		}
 
-		if err := build.BuildSite(root); err != nil {
+		if err := build.IncrementalBuild(root); err != nil {
 			return err
 		}
 
@@ -64,7 +64,7 @@ var serveCmd = &cobra.Command{
 		}
 
 		debouncer := watcher.NewDebouncer(
-			30000 * time.Millisecond,
+			750 * time.Millisecond,
 		)
 
 		go func() {
@@ -123,7 +123,7 @@ var serveCmd = &cobra.Command{
 								"[watch] rebuilding...",
 							)
 
-							if err := build.BuildSite(root); err != nil {
+							if err := build.IncrementalBuild(root); err != nil {
 
 								fmt.Printf(
 									"[watch] build failed: %v\n",

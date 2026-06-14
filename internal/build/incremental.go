@@ -1,10 +1,15 @@
 package build
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
+	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/fingerprint"
 	"github.com/sxijyoti/whiskey/internal/graph"
+	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/planner"
 )
 
@@ -12,13 +17,19 @@ func IncrementalBuild(
 	root string,
 ) error {
 
-	g, err := graph.BuildSiteGraph(
-		filepath.Join(
-			root,
-			"content",
-		),
+	contentRoot := filepath.Join(
+		root,
+		"content",
 	)
 
+	cfg, err := config.Load(root)
+	if err != nil {
+		return err
+	}
+
+	g, err := graph.BuildSiteGraph(
+		contentRoot,
+	)
 	if err != nil {
 		return err
 	}
@@ -26,58 +37,128 @@ func IncrementalBuild(
 	store, err := fingerprint.Load(
 		".whiskey/fingerprints.json",
 	)
-
 	if err != nil {
 		return err
 	}
 
-	if len(store) == 0 {
-
-		if err := BuildSite(
-			root,
-		); err != nil {
-			return err
-		}
-
-		return fingerprint.Save(
-			".whiskey/fingerprints.json",
-			store,
-		)
-	}
-
-	changed, err := fingerprint.
-		ChangedSources(
-			g,
-			store,
-		)
-
+	state, err := planner.LoadState(
+		".whiskey/state.json",
+	)
 	if err != nil {
 		return err
 	}
 
-	if len(changed) == 0 {
-
-		return fingerprint.Save(
-			".whiskey/fingerprints.json",
-			store,
-		)
-	}
-
-	dirty := planner.DirtyPages(
+	changedSources, err := fingerprint.ChangedSources(
 		g,
-		changed,
+		store,
+	)
+	if err != nil {
+		return err
+	}
+
+	localDirty, err := planner.LocalDirtyPages(
+		contentRoot,
+		state,
+	)
+	if err != nil {
+		return err
+	}
+
+	dirty := planner.IncrementalDirtySet(
+		g,
+		localDirty,
+		changedSources,
 	)
 
 	for _, page := range dirty {
 
-		println(
-			"[incremental]",
+		if err := rebuildPage(
+			root,
+			cfg,
+			contentRoot,
 			page,
+		); err != nil {
+			return err
+		}
+	}
+
+	if err := fingerprint.Save(
+		".whiskey/fingerprints.json",
+		store,
+	); err != nil {
+		return err
+	}
+
+	state.LastBuild = time.Now().UTC()
+
+	if err := planner.SaveState(
+		".whiskey/state.json",
+		state,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func rebuildPage(
+	root string,
+	cfg *config.Config,
+	contentRoot string,
+	page string,
+) error {
+
+	raw, err := os.ReadFile(page)
+	if err != nil {
+		return err
+	}
+
+	doc, err := parser.ParseFrontmatter(
+		raw,
+	)
+	if err != nil {
+		return err
+	}
+
+	if doc.Meta.Draft {
+		return nil
+	}
+
+	rel, err := filepath.Rel(
+		contentRoot,
+		page,
+	)
+	if err != nil {
+		return err
+	}
+
+	slug := strings.TrimSuffix(
+		rel,
+		filepath.Ext(rel),
+	)
+
+	var output string
+
+	if slug == "index" {
+
+		output = filepath.Join(
+			"dist",
+			"index.html",
+		)
+
+	} else {
+
+		output = filepath.Join(
+			"dist",
+			slug,
+			"index.html",
 		)
 	}
 
-	return fingerprint.Save(
-		".whiskey/fingerprints.json",
-		store,
+	return BuildPage(
+		root,
+		cfg,
+		doc,
+		output,
 	)
 }

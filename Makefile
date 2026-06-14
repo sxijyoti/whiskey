@@ -1,15 +1,14 @@
 BINARY := whiskey
 
-.PHONY: build run serve test lint clean install
+.PHONY: whiskey build run serve test lint clean distclean install
 
 whiskey:
-	make clean
-	make build
-	make install
+	@make build
+	@make install
 	whiskey serve
 
 build:
-	mkdir -p bin
+	@mkdir -p bin
 	go build -o bin/$(BINARY) ./cmd/whiskey
 
 run:
@@ -29,5 +28,9 @@ install:
 
 clean:
 	rm -rf dist
-	rm -rf .whiskey
 	rm -rf bin
+
+fullclean:
+	rm -rf dist
+	rm -rf bin
+	rm -rf .whiskey
