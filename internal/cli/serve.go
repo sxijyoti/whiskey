@@ -13,6 +13,7 @@ import (
 	"github.com/sxijyoti/whiskey/internal/build"
 	"github.com/sxijyoti/whiskey/internal/devserver"
 	"github.com/sxijyoti/whiskey/internal/watcher"
+	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 var port int
@@ -35,6 +36,21 @@ var serveCmd = &cobra.Command{
 		}
 
 		reloader := devserver.NewReloader()
+
+		source.Poller{
+			Interval: 30 * time.Second,
+		}.Start(func() {
+
+			if err := build.IncrementalBuild(
+				root,
+			); err != nil {
+
+				fmt.Println(err)
+				return
+			}
+
+			reloader.Broadcast()
+		})
 
 		w, err := fsnotify.NewWatcher()
 		if err != nil {

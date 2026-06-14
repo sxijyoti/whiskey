@@ -118,6 +118,10 @@ func IncrementalBuild(
 		return err
 	}
 
+	if err := CopyStatic(root); err != nil {
+		return err
+	}
+
 	return nil
 }
 

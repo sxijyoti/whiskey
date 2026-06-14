@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/sxijyoti/whiskey/internal/dependency"
+	"github.com/sxijyoti/whiskey/internal/parser"
 )
 
 func BuildSiteGraph(
@@ -37,6 +38,18 @@ func BuildSiteGraph(
 			raw, err := os.ReadFile(path)
 			if err != nil {
 				return err
+			}
+
+			doc, err := parser.ParseFrontmatter(
+				raw,
+			)
+
+			if err != nil {
+				return err
+			}
+
+			if doc.Meta.Draft {
+				return nil
 			}
 
 			g.AddNode(

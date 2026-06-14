@@ -2,7 +2,10 @@ package planner
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
+
+	"github.com/sxijyoti/whiskey/internal/parser"
 )
 
 func LocalDirtyPages(
@@ -29,6 +32,24 @@ func LocalDirtyPages(
 			}
 
 			if filepath.Ext(path) != ".md" {
+				return nil
+			}
+
+			raw, err := os.ReadFile(path)
+
+			if err != nil {
+				return err
+			}
+
+			doc, err := parser.ParseFrontmatter(
+				raw,
+			)
+
+			if err != nil {
+				return err
+			}
+
+			if doc.Meta.Draft {
 				return nil
 			}
 
