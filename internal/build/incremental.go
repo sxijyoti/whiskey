@@ -1,6 +1,7 @@
 package build
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -70,7 +71,26 @@ func IncrementalBuild(
 		changedSources,
 	)
 
+	if len(dirty) == 0 {
+
+		fmt.Println(
+			"[build] nothing changed",
+		)
+
+		return nil
+	}
+
+	fmt.Printf(
+		"[build] %d dirty page(s)\n",
+		len(dirty),
+	)
+
 	for _, page := range dirty {
+
+		fmt.Printf(
+			"[build] %s\n",
+			page,
+		)
 
 		if err := rebuildPage(
 			root,
@@ -130,6 +150,16 @@ func rebuildPage(
 	)
 	if err != nil {
 		return err
+	}
+
+	if doc.Meta.Draft {
+
+		fmt.Printf(
+			"[skip] draft %s\n",
+			page,
+		)
+
+		return nil
 	}
 
 	slug := strings.TrimSuffix(
