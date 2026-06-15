@@ -9,3 +9,5 @@ draft: false
 # Whiskey
 
 This is whiskey!
+
+@include https://raw.githubusercontent.com/sxijyoti/whiskey/main/README.md

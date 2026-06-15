@@ -6,21 +6,46 @@ import (
 	"github.com/sxijyoti/whiskey/internal/build"
 )
 
+var full bool
+
 var buildCmd = &cobra.Command{
-	Use:   "build",
+	Use:   "build [site-root]",
 	Short: "Build the site",
 	Args:  cobra.MaximumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+
+	RunE: func(
+		cmd *cobra.Command,
+		args []string,
+	) error {
+
 		root := "site"
 
 		if len(args) == 1 {
 			root = args[0]
 		}
 
-		return build.BuildSite(root)
+		if full {
+			return build.BuildSite(
+				root,
+			)
+		}
+
+		return build.IncrementalBuild(
+			root,
+		)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(buildCmd)
+
+	buildCmd.Flags().BoolVar(
+		&full,
+		"full",
+		false,
+		"force full rebuild",
+	)
+
+	rootCmd.AddCommand(
+		buildCmd,
+	)
 }

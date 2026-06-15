@@ -2,18 +2,154 @@ package cli
 
 import (
 	"fmt"
+	"path/filepath"
+	"time"
+
 	"github.com/spf13/cobra"
+
+	"github.com/sxijyoti/whiskey/internal/fingerprint"
+	"github.com/sxijyoti/whiskey/internal/graph"
+	"github.com/sxijyoti/whiskey/internal/planner"
 )
 
 var checkCmd = &cobra.Command{
-	Use:   "check",
-	Short: "Validate site configuration",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Checking site...")
+	Use:   "check [site-root]",
+	Short: "Inspect site dependencies",
+	Args:  cobra.MaximumNArgs(1),
+
+	RunE: func(
+		cmd *cobra.Command,
+		args []string,
+	) error {
+
+		root := "site"
+
+		if len(args) == 1 {
+			root = args[0]
+		}
+
+		g, err := graph.BuildSiteGraph(
+			filepath.Join(
+				root,
+				"content",
+			),
+		)
+		if err != nil {
+			return err
+		}
+
+		store, err := fingerprint.Load(
+			".whiskey/fingerprints.json",
+		)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println()
+		fmt.Println("Dependency Graph")
+		fmt.Println()
+
+		for _, edge := range g.Edges {
+
+			fmt.Printf(
+				"%s\n",
+				edge.From,
+			)
+
+			fmt.Printf(
+				" └── %s\n\n",
+				edge.To,
+			)
+		}
+
+		changed, err := fingerprint.ChangedSources(
+			g,
+			store,
+		)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Changed Sources")
+		fmt.Println()
+
+		if len(changed) == 0 {
+
+			fmt.Println("(none)")
+			fmt.Println()
+
+		} else {
+
+			for _, src := range changed {
+				fmt.Println(src)
+			}
+
+			fmt.Println()
+		}
+
+		state, err := planner.LoadState(
+			".whiskey/state.json",
+		)
+		if err != nil {
+			return err
+		}
+
+		localDirty, err := planner.LocalDirtyPages(
+			filepath.Join(
+				root,
+				"content",
+			),
+			state,
+		)
+		if err != nil {
+			return err
+		}
+
+		dirty := planner.IncrementalDirtySet(
+			g,
+			localDirty,
+			changed,
+		)
+
+		fmt.Println("Dirty Pages")
+		fmt.Println()
+
+		if len(dirty) == 0 {
+
+			fmt.Println("(none)")
+			fmt.Println()
+
+		} else {
+
+			for _, page := range dirty {
+				fmt.Println(page)
+			}
+
+			fmt.Println()
+		}
+
+		if err := fingerprint.Save(
+			".whiskey/fingerprints.json",
+			store,
+		); err != nil {
+			return err
+		}
+
+		state.LastBuild = time.Now().UTC()
+
+		if err := planner.SaveState(
+			".whiskey/state.json",
+			state,
+		); err != nil {
+			return err
+		}
+
 		return nil
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(checkCmd)
+	rootCmd.AddCommand(
+		checkCmd,
+	)
 }
