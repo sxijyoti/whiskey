@@ -9,6 +9,74 @@ import (
 	"github.com/sxijyoti/whiskey/internal/parser"
 )
 
+func addTemplateGraph(
+	g *Graph,
+	pagePath string,
+	layout string,
+) {
+
+	layoutPath := filepath.Join(
+		"themes",
+		"default",
+		"layouts",
+		layout+".html",
+	)
+
+	basePath := filepath.Join(
+		"themes",
+		"default",
+		"layouts",
+		"base.html",
+	)
+
+	g.AddNode(
+		layoutPath,
+		LayoutNode,
+	)
+
+	g.AddNode(
+		basePath,
+		LayoutNode,
+	)
+
+	g.AddEdge(
+		pagePath,
+		layoutPath,
+	)
+
+	g.AddEdge(
+		layoutPath,
+		basePath,
+	)
+
+	partials := []string{
+		"head.html",
+		"header.html",
+		"footer.html",
+	}
+
+	for _, partial := range partials {
+
+		p := filepath.Join(
+			"themes",
+			"default",
+			"layouts",
+			"partials",
+			partial,
+		)
+
+		g.AddNode(
+			p,
+			PartialNode,
+		)
+
+		g.AddEdge(
+			basePath,
+			p,
+		)
+	}
+}
+
 func BuildSiteGraph(
 	contentRoot string,
 ) (*Graph, error) {
@@ -66,6 +134,18 @@ func BuildSiteGraph(
 				g.AddNode(
 					dir.Ref,
 					SourceNode,
+				)
+
+				layout := doc.Meta.Layout
+
+				if layout == "" {
+					layout = "page"
+				}
+
+				addTemplateGraph(
+					g,
+					path,
+					layout,
 				)
 
 				g.AddEdge(
