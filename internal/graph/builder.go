@@ -125,6 +125,18 @@ func BuildSiteGraph(
 				PageNode,
 			)
 
+			layout := doc.Meta.Layout
+
+			if layout == "" {
+				layout = "page"
+			}
+
+			addTemplateGraph(
+				g,
+				path,
+				layout,
+			)
+
 			directives := dependency.Extract(
 				string(raw),
 			)
@@ -134,18 +146,6 @@ func BuildSiteGraph(
 				g.AddNode(
 					dir.Ref,
 					SourceNode,
-				)
-
-				layout := doc.Meta.Layout
-
-				if layout == "" {
-					layout = "page"
-				}
-
-				addTemplateGraph(
-					g,
-					path,
-					layout,
 				)
 
 				g.AddEdge(
