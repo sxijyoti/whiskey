@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -126,22 +125,6 @@ var checkCmd = &cobra.Command{
 			}
 
 			fmt.Println()
-		}
-
-		if err := fingerprint.Save(
-			".whiskey/fingerprints.json",
-			store,
-		); err != nil {
-			return err
-		}
-
-		state.LastBuild = time.Now().UTC()
-
-		if err := planner.SaveState(
-			".whiskey/state.json",
-			state,
-		); err != nil {
-			return err
 		}
 
 		return nil

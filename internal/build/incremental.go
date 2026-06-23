@@ -73,10 +73,11 @@ func IncrementalBuild(
 
 	if len(dirty) == 0 {
 
-		fmt.Println(
-			"[build] nothing changed",
-		)
+		if _, err := os.Stat("dist"); os.IsNotExist(err) {
+			return BuildSite(root)
+		}
 
+		fmt.Println("[build] nothing changed")
 		return nil
 	}
 
