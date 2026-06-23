@@ -3,9 +3,11 @@ package graph
 type NodeType string
 
 const (
-	PageNode   NodeType = "page"
-	SourceNode NodeType = "source"
-	TagNode    NodeType = "tag"
+	PageNode    NodeType = "page"
+	SourceNode  NodeType = "source"
+	LayoutNode  NodeType = "layout"
+	PartialNode NodeType = "partial"
+	AssetNode   NodeType = "asset"
 )
 
 type Node struct {
@@ -21,11 +23,16 @@ type Edge struct {
 type Graph struct {
 	Nodes map[string]*Node `json:"nodes"`
 	Edges []Edge           `json:"edges"`
+
+	Out map[string][]string `json:"-"`
+	In  map[string][]string `json:"-"`
 }
 
 func New() *Graph {
 	return &Graph{
 		Nodes: make(map[string]*Node),
+		Out:   make(map[string][]string),
+		In:    make(map[string][]string),
 	}
 }
 
@@ -56,42 +63,65 @@ func (g *Graph) AddEdge(
 			To:   to,
 		},
 	)
+
+	g.Out[from] = append(
+		g.Out[from],
+		to,
+	)
+
+	g.In[to] = append(
+		g.In[to],
+		from,
+	)
 }
 
 func (g *Graph) Dependencies(
 	id string,
 ) []string {
-
-	var deps []string
-
-	for _, edge := range g.Edges {
-
-		if edge.From == id {
-			deps = append(
-				deps,
-				edge.To,
-			)
-		}
-	}
-
-	return deps
+	return g.Out[id]
 }
 
 func (g *Graph) Dependents(
 	id string,
 ) []string {
+	return g.In[id]
+}
 
-	var deps []string
+func (g *Graph) ReachableFrom(
+	start string,
+) []string {
 
-	for _, edge := range g.Edges {
+	seen := map[string]bool{}
+	queue := []string{start}
 
-		if edge.To == id {
-			deps = append(
-				deps,
-				edge.From,
+	for len(queue) > 0 {
+
+		current := queue[0]
+		queue = queue[1:]
+
+		for _, next := range g.In[current] {
+
+			if seen[next] {
+				continue
+			}
+
+			seen[next] = true
+
+			queue = append(
+				queue,
+				next,
 			)
 		}
 	}
 
-	return deps
+	var nodes []string
+
+	for node := range seen {
+		nodes = append(
+			nodes,
+			node,
+		)
+	}
+
+	return nodes
 }
