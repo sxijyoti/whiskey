@@ -9,19 +9,30 @@ func DirtyPages(
 
 	seen := map[string]struct{}{}
 
-	for _, src := range changed {
+	for _, node := range changed {
 
-		for _, page := range g.Dependents(
-			src,
+		for _, dep := range g.ReachableFrom(
+			node,
 		) {
 
-			seen[page] = struct{}{}
+			n := g.Nodes[dep]
+
+			if n == nil {
+				continue
+			}
+
+			if n.Type != graph.PageNode {
+				continue
+			}
+
+			seen[dep] = struct{}{}
 		}
 	}
 
 	var pages []string
 
 	for page := range seen {
+
 		pages = append(
 			pages,
 			page,
