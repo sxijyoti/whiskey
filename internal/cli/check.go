@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -87,19 +86,12 @@ var checkCmd = &cobra.Command{
 			fmt.Println()
 		}
 
-		state, err := planner.LoadState(
-			".whiskey/state.json",
-		)
-		if err != nil {
-			return err
-		}
-
 		localDirty, err := planner.LocalDirtyPages(
 			filepath.Join(
 				root,
 				"content",
 			),
-			state,
+			store,
 		)
 		if err != nil {
 			return err
@@ -126,22 +118,6 @@ var checkCmd = &cobra.Command{
 			}
 
 			fmt.Println()
-		}
-
-		if err := fingerprint.Save(
-			".whiskey/fingerprints.json",
-			store,
-		); err != nil {
-			return err
-		}
-
-		state.LastBuild = time.Now().UTC()
-
-		if err := planner.SaveState(
-			".whiskey/state.json",
-			state,
-		); err != nil {
-			return err
 		}
 
 		return nil

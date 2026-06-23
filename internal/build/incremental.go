@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/fingerprint"
@@ -42,12 +41,6 @@ func IncrementalBuild(
 		return err
 	}
 
-	state, err := planner.LoadState(
-		".whiskey/state.json",
-	)
-	if err != nil {
-		return err
-	}
 
 	changedSources, err := fingerprint.ChangedSources(
 		g,
@@ -57,9 +50,14 @@ func IncrementalBuild(
 		return err
 	}
 
+	dirtyAssets := DirtyAssets(
+		g,
+		changedSources,
+	)
+
 	localDirty, err := planner.LocalDirtyPages(
 		contentRoot,
-		state,
+		store,
 	)
 	if err != nil {
 		return err
@@ -70,35 +68,54 @@ func IncrementalBuild(
 		localDirty,
 		changedSources,
 	)
+	if len(dirty) == 0 &&
+		len(dirtyAssets) == 0 {
 
-	if len(dirty) == 0 {
+		if _, err := os.Stat("dist"); os.IsNotExist(err) {
+			return BuildSite(root)
+		}
 
-		fmt.Println(
-			"[build] nothing changed",
-		)
-
+		fmt.Println("[build] nothing changed")
 		return nil
 	}
 
-	fmt.Printf(
-		"[build] %d dirty page(s)\n",
-		len(dirty),
-	)
-
-	for _, page := range dirty {
+	for _, asset := range dirtyAssets {
 
 		fmt.Printf(
-			"[build] %s\n",
-			page,
+			"[asset] %s\n",
+			asset,
 		)
 
-		if err := rebuildPage(
+		if err := CopyAsset(
 			root,
-			cfg,
-			contentRoot,
-			page,
+			asset,
 		); err != nil {
 			return err
+		}
+	}
+
+	if len(dirty) > 0 {
+
+		fmt.Printf(
+			"[build] %d dirty page(s)\n",
+			len(dirty),
+		)
+
+		for _, page := range dirty {
+
+			fmt.Printf(
+				"[build] %s\n",
+				page,
+			)
+
+			if err := rebuildPage(
+				root,
+				cfg,
+				contentRoot,
+				page,
+			); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -109,20 +126,8 @@ func IncrementalBuild(
 		return err
 	}
 
-	state.LastBuild = time.Now().UTC()
-
-	if err := planner.SaveState(
-		".whiskey/state.json",
-		state,
-	); err != nil {
-		return err
-	}
-
-	if err := CopyStatic(root); err != nil {
-		return err
-	}
-
 	return nil
+
 }
 
 func rebuildPage(

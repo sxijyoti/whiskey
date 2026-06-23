@@ -67,7 +67,22 @@ var serveCmd = &cobra.Command{
 
 		if err := watcher.WatchRecursive(
 			w,
-			filepath.Join(root, "layouts"),
+			filepath.Join(
+				"themes",
+				"default",
+				"layouts",
+			),
+		); err != nil {
+			return err
+		}
+
+		if err := watcher.WatchRecursive(
+			w,
+			filepath.Join(
+				"themes",
+				"default",
+				"static",
+			),
 		); err != nil {
 			return err
 		}

@@ -1,5 +1,5 @@
 ---
-title: Index
+title: About
 description: index page
 date: 2026-06-02
 tag: page

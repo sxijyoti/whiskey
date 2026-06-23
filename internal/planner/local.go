@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/sxijyoti/whiskey/internal/parser"
+	"github.com/sxijyoti/whiskey/internal/fingerprint"
 )
 
 func LocalDirtyPages(
 	contentRoot string,
-	state *State,
+	store fingerprint.Store,
 ) ([]string, error) {
 
 	var dirty []string
@@ -36,46 +36,27 @@ func LocalDirtyPages(
 			}
 
 			raw, err := os.ReadFile(path)
-
 			if err != nil {
 				return err
 			}
 
-			doc, err := parser.ParseFrontmatter(
+			hash := fingerprint.SHA256(
 				raw,
 			)
 
-			if err != nil {
-				return err
-			}
+			old := store[path]
 
-			if doc.Meta.Draft {
-				return nil
-			}
-
-			info, err := d.Info()
-			if err != nil {
-				return err
-			}
-
-			if state.LastBuild.IsZero() {
+			if old.Hash != hash {
 
 				dirty = append(
 					dirty,
 					path,
 				)
 
-				return nil
-			}
-
-			if info.ModTime().After(
-				state.LastBuild,
-			) {
-
-				dirty = append(
-					dirty,
-					path,
-				)
+				store[path] =
+					fingerprint.Entry{
+						Hash: hash,
+					}
 			}
 
 			return nil
