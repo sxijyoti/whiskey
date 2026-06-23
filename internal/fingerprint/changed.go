@@ -79,7 +79,8 @@ func ChangedSources(
 			}
 
 		case graph.LayoutNode,
-			graph.PartialNode:
+			graph.PartialNode,
+			graph.AssetNode:
 
 			data, err := os.ReadFile(
 				node.ID,
