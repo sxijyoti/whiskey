@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/fingerprint"
@@ -42,12 +41,6 @@ func IncrementalBuild(
 		return err
 	}
 
-	state, err := planner.LoadState(
-		".whiskey/state.json",
-	)
-	if err != nil {
-		return err
-	}
 
 	changedSources, err := fingerprint.ChangedSources(
 		g,
@@ -59,7 +52,7 @@ func IncrementalBuild(
 
 	localDirty, err := planner.LocalDirtyPages(
 		contentRoot,
-		state,
+		store,
 	)
 	if err != nil {
 		return err
@@ -110,14 +103,6 @@ func IncrementalBuild(
 		return err
 	}
 
-	state.LastBuild = time.Now().UTC()
-
-	if err := planner.SaveState(
-		".whiskey/state.json",
-		state,
-	); err != nil {
-		return err
-	}
 
 	if err := CopyStatic(root); err != nil {
 		return err

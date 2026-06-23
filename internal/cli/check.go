@@ -86,19 +86,12 @@ var checkCmd = &cobra.Command{
 			fmt.Println()
 		}
 
-		state, err := planner.LoadState(
-			".whiskey/state.json",
-		)
-		if err != nil {
-			return err
-		}
-
 		localDirty, err := planner.LocalDirtyPages(
 			filepath.Join(
 				root,
 				"content",
 			),
-			state,
+			store,
 		)
 		if err != nil {
 			return err
