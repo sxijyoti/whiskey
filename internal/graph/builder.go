@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"path/filepath"
 	"os"
+	"fmt"
 
 	"github.com/sxijyoti/whiskey/internal/dependency"
 	"github.com/sxijyoti/whiskey/internal/parser"
@@ -111,7 +112,6 @@ func BuildSiteGraph(
 			doc, err := parser.ParseFrontmatter(
 				raw,
 			)
-
 			if err != nil {
 				return err
 			}
@@ -160,6 +160,60 @@ func BuildSiteGraph(
 
 	if err != nil {
 		return nil, err
+	}
+
+	assetRoots := []string{
+		filepath.Join(
+			contentRoot,
+			"..",
+			"static",
+		),
+		filepath.Join(
+			"themes",
+			"default",
+			"static",
+		),
+	}
+
+	for _, root := range assetRoots {
+
+		if _, err := os.Stat(root); os.IsNotExist(err) {
+			continue
+		}
+
+		err := filepath.WalkDir(
+			root,
+			func(
+				path string,
+				d fs.DirEntry,
+				err error,
+			) error {
+
+				if err != nil {
+					return err
+				}
+
+				if d.IsDir() {
+					return nil
+				}
+
+				g.AddNode(
+					path,
+					AssetNode,
+				)
+
+				fmt.Printf(
+					"[asset] %s\n",
+					path,
+				)
+
+				return nil
+			},
+		)
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return g, nil
