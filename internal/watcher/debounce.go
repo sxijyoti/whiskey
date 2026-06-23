@@ -29,20 +29,15 @@ func (d *Debouncer) Run(
 
 	d.fn = fn
 
-	if d.timer == nil {
-
-		d.timer = time.AfterFunc(
-			d.delay,
-			func() {
-				d.fire()
-			},
-		)
-
-		return
+	if d.timer != nil {
+		d.timer.Stop()
 	}
 
-	d.timer.Reset(
+	d.timer = time.AfterFunc(
 		d.delay,
+		func() {
+			d.fire()
+		},
 	)
 }
 
@@ -50,6 +45,9 @@ func (d *Debouncer) fire() {
 
 	d.mu.Lock()
 	fn := d.fn
+
+	d.timer = nil
+
 	d.mu.Unlock()
 
 	if fn != nil {

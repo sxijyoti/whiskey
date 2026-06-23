@@ -4,7 +4,6 @@ import (
 	"io/fs"
 	"path/filepath"
 	"os"
-	"fmt"
 
 	"github.com/sxijyoti/whiskey/internal/dependency"
 	"github.com/sxijyoti/whiskey/internal/parser"
@@ -200,11 +199,6 @@ func BuildSiteGraph(
 				g.AddNode(
 					path,
 					AssetNode,
-				)
-
-				fmt.Printf(
-					"[asset] %s\n",
-					path,
 				)
 
 				return nil
