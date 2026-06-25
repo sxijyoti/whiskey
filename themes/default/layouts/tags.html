@@ -1,0 +1,13 @@
+{{ define "content" }}
+
+<h1>Tags</h1>
+
+{{ range .Tags }}
+<p>
+    <a href="/tags/{{ .Slug }}/">
+        {{ .Name }}
+    </a>
+</p>
+{{ end }}
+
+{{ end }}
