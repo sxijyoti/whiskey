@@ -54,6 +54,7 @@ func BuildPage(
 			Title:       doc.Meta.Title,
 			Description: doc.Meta.Description,
 			Date:        date,
+			Tags:        doc.Meta.Tags,
 			Content:     htmltemplate.HTML(html),
 		},
 	)

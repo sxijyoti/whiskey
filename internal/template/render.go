@@ -11,6 +11,7 @@ type PageData struct {
 	Title       string
 	Description string
 	Date        string
+	Tags        []string
 	Content     htmltemplate.HTML
 }
 

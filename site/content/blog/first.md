@@ -2,7 +2,8 @@
 title: First Blog
 description: first blog
 date: 2026-06-02
-tag: blog
+tags:
+  - blog
 layout: post
 ---
 
