@@ -40,11 +40,20 @@ func BuildRSS(
 		"content",
 	)
 
+	allowed := map[string]bool{}
+
+	for _, collection := range cfg.RSS.Collections {
+
+		allowed[collection] = true
+	}
+
 	var items []Item
 
 	for _, page := range pages {
 
-		raw, err := os.ReadFile(page)
+		raw, err := os.ReadFile(
+			page,
+		)
 
 		if err != nil {
 			return err
@@ -62,7 +71,9 @@ func BuildRSS(
 			continue
 		}
 
-		if doc.Meta.Layout != "post" {
+		if !allowed[
+			doc.Meta.Collection,
+		] {
 			continue
 		}
 
@@ -80,17 +91,24 @@ func BuildRSS(
 			filepath.Ext(rel),
 		)
 
-		url := cfg.BaseURL + "/" + slug + "/"
+		url := strings.TrimRight(
+			cfg.BaseURL,
+			"/",
+		) + "/" + slug + "/"
 
 		if slug == "index" {
-			url = cfg.BaseURL + "/"
+
+			url = strings.TrimRight(
+				cfg.BaseURL,
+				"/",
+			) + "/"
 		}
 
 		items = append(
 			items,
 			Item{
 				Title: doc.Meta.Title,
-				Link: url,
+				Link:  url,
 				Date: doc.Meta.Date.Format(
 					"Mon, 02 Jan 2006 15:04:05 MST",
 				),
@@ -101,10 +119,10 @@ func BuildRSS(
 	rss := RSS{
 		Version: "2.0",
 		Channel: Channel{
-			Title: cfg.Title,
+			Title:       cfg.Title,
 			Description: cfg.Description,
-			Link: cfg.BaseURL,
-			Items: items,
+			Link:        cfg.BaseURL,
+			Items:       items,
 		},
 	}
 
@@ -117,6 +135,11 @@ func BuildRSS(
 	if err != nil {
 		return err
 	}
+
+	data = append(
+		[]byte(xml.Header),
+		data...,
+	)
 
 	return os.WriteFile(
 		"dist/feed.xml",

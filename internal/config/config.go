@@ -8,11 +8,16 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+type RSSConfig struct {
+	Collections []string `toml:"collections"`
+}
+
 type Config struct {
 	Title       string `toml:"title"`
 	Description string `toml:"description"`
 	BaseURL     string `toml:"base_url"`
 	Theme       string `toml:"theme"`
+	RSS         RSSConfig `toml:"rss"`
 }
 
 func Load(siteRoot string) (*Config, error) {
@@ -49,6 +54,12 @@ func Default() *Config {
 		Description: "",
 		BaseURL:     "",
 		Theme:       "default",
+
+		RSS: RSSConfig{
+			Collections: []string{
+				"blog",
+			},
+		},
 	}
 }
 
