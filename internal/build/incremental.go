@@ -119,6 +119,24 @@ func IncrementalBuild(
 		}
 	}
 
+	if len(localDirty) > 0 {
+
+		allPages, err := DiscoverPages(
+			contentRoot,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		if err := BuildTags(
+			root,
+			allPages,
+		); err != nil {
+			return err
+		}
+	}
+
 	if err := fingerprint.Save(
 		".whiskey/fingerprints.json",
 		store,
