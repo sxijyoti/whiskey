@@ -135,6 +135,14 @@ func IncrementalBuild(
 		); err != nil {
 			return err
 		}
+
+		if err := BuildRSS(
+			root,
+			cfg,
+			allPages,
+		); err != nil {
+			return err
+		}
 	}
 
 	if err := fingerprint.Save(

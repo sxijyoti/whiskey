@@ -159,6 +159,14 @@ func BuildSite(root string) error {
 		return err
 	}
 
+	if err := BuildRSS(
+		root,
+		cfg,
+		pages,
+	); err != nil {
+		return err
+	}
+
 	if err := CopyStatic(root); err != nil {
 		return err
 	}
