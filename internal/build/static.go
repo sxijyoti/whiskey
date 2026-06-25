@@ -63,10 +63,10 @@ func copyDir(srcRoot, dstRoot string) error {
 	)
 }
 
-func CopyStatic(siteRoot string) error {
+func CopyStatic(siteRoot, theme string) error {
 	themeStatic := filepath.Join(
 		"themes",
-		"default",
+		theme,
 		"static",
 	)
 

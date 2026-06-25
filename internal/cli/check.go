@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/fingerprint"
 	"github.com/sxijyoti/whiskey/internal/graph"
 	"github.com/sxijyoti/whiskey/internal/planner"
@@ -27,11 +28,14 @@ var checkCmd = &cobra.Command{
 			root = args[0]
 		}
 
+		cfg, err := config.Load(root)
+		if err != nil {
+			return err
+		}
+
 		g, err := graph.BuildSiteGraph(
-			filepath.Join(
-				root,
-				"content",
-			),
+			root,
+			cfg.Theme,
 		)
 		if err != nil {
 			return err

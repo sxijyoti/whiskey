@@ -1,11 +1,16 @@
 package build
 
 import (
+	"html"
+	htmltemplate "html/template"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
+	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/parser"
+	"github.com/sxijyoti/whiskey/internal/template"
 )
 
 type TagPage struct {
@@ -17,6 +22,7 @@ type TagPage struct {
 
 func BuildTags(
 	root string,
+	cfg *config.Config,
 	pages []string,
 ) error {
 
@@ -72,7 +78,7 @@ func BuildTags(
 				tagMap[tag],
 				TagPage{
 					Title: doc.Meta.Title,
-					URL: url,
+					URL:   url,
 					Date: doc.Meta.Date.Format(
 						"2006-01-02",
 					),
@@ -83,11 +89,15 @@ func BuildTags(
 	}
 
 	return writeTagPages(
+		root,
+		cfg,
 		tagMap,
 	)
 }
 
 func writeTagPages(
+	root string,
+	cfg *config.Config,
 	tags map[string][]TagPage,
 ) error {
 
@@ -98,29 +108,43 @@ func writeTagPages(
 		return err
 	}
 
-	var index string
-
-	index += "<h1>Tags</h1>"
-
+	tagNames := make([]string, 0, len(tags))
 	for tag := range tags {
+		tagNames = append(tagNames, tag)
+	}
+	sort.Strings(tagNames)
 
-		index +=
-			"<p><a href=\"/tags/" +
-				tag +
-				"/\">" +
-				tag +
-				"</a></p>"
+	indexPage, err := template.RenderPage(
+		root,
+		cfg.Theme,
+		"tags",
+		template.PageData{
+			Site:        cfg,
+			Title:       "Tags",
+			Description: "Tags",
+			Tags:        tagNames,
+		},
+	)
+	if err != nil {
+		return err
 	}
 
 	if err := os.WriteFile(
 		"dist/tags/index.html",
-		[]byte(index),
+		indexPage,
 		0644,
 	); err != nil {
 		return err
 	}
 
 	for tag, pages := range tags {
+		sort.Slice(pages, func(i, j int) bool {
+			if pages[i].Date == pages[j].Date {
+				return pages[i].Title < pages[j].Title
+			}
+
+			return pages[i].Date > pages[j].Date
+		})
 
 		dir := filepath.Join(
 			"dist",
@@ -135,16 +159,33 @@ func writeTagPages(
 			return err
 		}
 
-		html := "<h1>" + tag + "</h1>"
+		var content strings.Builder
+		content.WriteString("<h1>")
+		content.WriteString(html.EscapeString(tag))
+		content.WriteString("</h1>")
 
 		for _, p := range pages {
 
-			html +=
-				"<p><a href=\"" +
-				p.URL +
-				"\">" +
-				p.Title +
-				"</a></p>"
+			content.WriteString("<p><a href=\"")
+			content.WriteString(html.EscapeString(p.URL))
+			content.WriteString("\">")
+			content.WriteString(html.EscapeString(p.Title))
+			content.WriteString("</a></p>")
+		}
+
+		page, err := template.RenderPage(
+			root,
+			cfg.Theme,
+			"page",
+			template.PageData{
+				Site:        cfg,
+				Title:       tag,
+				Description: tag,
+				Content:     htmltemplate.HTML(content.String()),
+			},
+		)
+		if err != nil {
+			return err
 		}
 
 		if err := os.WriteFile(
@@ -152,7 +193,7 @@ func writeTagPages(
 				dir,
 				"index.html",
 			),
-			[]byte(html),
+			page,
 			0644,
 		); err != nil {
 			return err

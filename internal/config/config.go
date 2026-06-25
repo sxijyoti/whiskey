@@ -12,11 +12,17 @@ type RSSConfig struct {
 	Collections []string `toml:"collections"`
 }
 
+type NavItem struct {
+	Title string
+	URL   string
+}
+
 type Config struct {
 	Title       string `toml:"title"`
 	Description string `toml:"description"`
 	BaseURL     string `toml:"base_url"`
 	Theme       string `toml:"theme"`
+	Nav         []NavItem
 	RSS         RSSConfig `toml:"rss"`
 }
 
@@ -53,7 +59,7 @@ func Default() *Config {
 		Title:       "Whiskey Site",
 		Description: "",
 		BaseURL:     "",
-		Theme:       "default",
+		Theme:       "minimal",
 
 		RSS: RSSConfig{
 			Collections: []string{

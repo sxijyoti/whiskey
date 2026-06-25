@@ -1,0 +1,15 @@
+{{ define "content" }}
+
+<main class="site-main">
+<h1>Tags</h1>
+
+{{ range .Tags }}
+<p>
+	<a href="/tags/{{ . }}/">
+		{{ . }}
+	</a>
+</p>
+{{ end }}
+</main>
+
+{{ end }}

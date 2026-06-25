@@ -1,6 +1,7 @@
 package build
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -9,12 +10,13 @@ import (
 
 func CopyAsset(
 	root string,
+	theme string,
 	asset string,
 ) error {
 
 	themeRoot := filepath.Join(
 		"themes",
-		"default",
+		theme,
 		"static",
 	)
 
@@ -40,6 +42,15 @@ func CopyAsset(
 		}
 
 		rel = r
+
+		siteOverride := filepath.Join(
+			siteRoot,
+			rel,
+		)
+
+		if _, err := os.Stat(siteOverride); err == nil {
+			asset = siteOverride
+		}
 
 	} else {
 

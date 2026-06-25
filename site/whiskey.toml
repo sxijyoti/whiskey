@@ -3,7 +3,7 @@ description = "Dependency-aware static site generator"
 
 base_url = "http://localhost:8080"
 
-theme = "default"
+theme = "noir"
 
 [rss]
 collections = [

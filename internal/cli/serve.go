@@ -11,12 +11,27 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/sxijyoti/whiskey/internal/build"
+	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/devserver"
-	"github.com/sxijyoti/whiskey/internal/watcher"
 	"github.com/sxijyoti/whiskey/internal/source"
+	"github.com/sxijyoti/whiskey/internal/watcher"
 )
 
 var port int
+
+func watchIfExists(
+	w *fsnotify.Watcher,
+	root string,
+) error {
+	if _, err := os.Stat(root); os.IsNotExist(err) {
+		return nil
+	}
+
+	return watcher.WatchRecursive(
+		w,
+		root,
+	)
+}
 
 var serveCmd = &cobra.Command{
 	Use:   "serve [site-root]",
@@ -32,6 +47,11 @@ var serveCmd = &cobra.Command{
 		}
 
 		if err := build.IncrementalBuild(root); err != nil {
+			return err
+		}
+
+		cfg, err := config.Load(root)
+		if err != nil {
 			return err
 		}
 
@@ -58,36 +78,43 @@ var serveCmd = &cobra.Command{
 		}
 		defer w.Close()
 
-		if err := watcher.WatchRecursive(
+		if err := watchIfExists(
 			w,
 			filepath.Join(root, "content"),
 		); err != nil {
 			return err
 		}
 
-		if err := watcher.WatchRecursive(
+		if err := watchIfExists(
+			w,
+			filepath.Join(root, "layouts"),
+		); err != nil {
+			return err
+		}
+
+		if err := watchIfExists(
 			w,
 			filepath.Join(
 				"themes",
-				"default",
+				cfg.Theme,
 				"layouts",
 			),
 		); err != nil {
 			return err
 		}
 
-		if err := watcher.WatchRecursive(
+		if err := watchIfExists(
 			w,
 			filepath.Join(
 				"themes",
-				"default",
+				cfg.Theme,
 				"static",
 			),
 		); err != nil {
 			return err
 		}
 
-		if err := watcher.WatchRecursive(
+		if err := watchIfExists(
 			w,
 			filepath.Join(root, "static"),
 		); err != nil {

@@ -27,8 +27,25 @@ func IncrementalBuild(
 		return err
 	}
 
-	g, err := graph.BuildSiteGraph(
+	allPages, err := DiscoverPages(
 		contentRoot,
+	)
+	if err != nil {
+		return err
+	}
+
+	nav, err := BuildNav(
+		root,
+		allPages,
+	)
+	if err != nil {
+		return err
+	}
+	cfg.Nav = nav
+
+	g, err := graph.BuildSiteGraph(
+		root,
+		cfg.Theme,
 	)
 	if err != nil {
 		return err
@@ -40,7 +57,6 @@ func IncrementalBuild(
 	if err != nil {
 		return err
 	}
-
 
 	changedSources, err := fingerprint.ChangedSources(
 		g,
@@ -88,6 +104,7 @@ func IncrementalBuild(
 
 		if err := CopyAsset(
 			root,
+			cfg.Theme,
 			asset,
 		); err != nil {
 			return err
@@ -121,15 +138,9 @@ func IncrementalBuild(
 
 	if len(localDirty) > 0 {
 
-		allPages, err := DiscoverPages(
-			contentRoot,
-		)
-		if err != nil {
-			return err
-		}
-
 		if err := BuildCollections(
 			root,
+			cfg,
 			allPages,
 		); err != nil {
 			return err
@@ -137,6 +148,7 @@ func IncrementalBuild(
 
 		if err := BuildTags(
 			root,
+			cfg,
 			allPages,
 		); err != nil {
 			return err

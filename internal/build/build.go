@@ -48,6 +48,7 @@ func BuildPage(
 
 	page, err := template.RenderPage(
 		siteRoot,
+		cfg.Theme,
 		layout,
 		template.PageData{
 			Site:        cfg,
@@ -94,6 +95,15 @@ func BuildSite(root string) error {
 	if err != nil {
 		return err
 	}
+
+	nav, err := BuildNav(
+		root,
+		pages,
+	)
+	if err != nil {
+		return err
+	}
+	cfg.Nav = nav
 
 	for _, page := range pages {
 
@@ -154,6 +164,7 @@ func BuildSite(root string) error {
 
 	if err := BuildTags(
 		root,
+		cfg,
 		pages,
 	); err != nil {
 		return err
@@ -169,12 +180,16 @@ func BuildSite(root string) error {
 
 	if err := BuildCollections(
 		root,
+		cfg,
 		pages,
 	); err != nil {
 		return err
 	}
 
-	if err := CopyStatic(root); err != nil {
+	if err := CopyStatic(
+		root,
+		cfg.Theme,
+	); err != nil {
 		return err
 	}
 

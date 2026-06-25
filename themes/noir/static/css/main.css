@@ -1,0 +1,252 @@
+:root {
+    --bg: #f4f3ef;         /* Cheap, unbleached manuscript paper */
+    --fg: #000000;         /* Pure typewriter ribbon black */
+    --muted: #555555;      /* Faded ink */
+    --border: #000000;     /* Harsh, stark black borders */
+    --link: #cc0000;       /* Red editing pen */
+    --max-width: 72ch;     /* Measured in characters for typewriter accuracy */
+    color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* "Microfilm / Microfiche Archive" mode */
+        --bg: #0a0a0a;         
+        --fg: #e0e0e0;         
+        --muted: #888888;      
+        --border: #e0e0e0;     
+        --link: #828585;       /* Harsh cyan for high microfilm contrast */
+        color-scheme: dark;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    background: var(--bg);
+    color: var(--fg);
+    /* Forced Typewriter stack */
+    font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Lucida Typewriter", monospace;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--bg);
+    color: var(--fg);
+}
+
+.site-header,
+.site-main,
+.site-footer {
+    width: min(100% - 2rem, var(--max-width));
+    margin-inline: auto;
+}
+
+.site-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    padding: 3rem 0 1rem;
+    border-bottom: 3px solid var(--fg); /* Heavy, brutalist border */
+    margin-bottom: 2rem;
+}
+
+.site-branding {
+    min-width: 0;
+}
+
+.site-title {
+    color: var(--fg);
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: -0.05em; /* Simulates ink bleed/tight typebars */
+}
+
+.site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.site-nav a {
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.site-nav a:hover {
+    background: var(--link);
+    color: var(--bg);
+    text-decoration: none;
+}
+
+.site-main {
+    padding: 1rem 0;
+}
+
+.site-footer {
+    padding: 2rem 0 4rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+    border-top: 1px dashed var(--muted); /* Perforated edge look */
+    margin-top: 4rem;
+}
+
+h1, h2, h3, h4 {
+    margin: 2.5rem 0 1rem;
+    color: var(--fg);
+    line-height: 1.2;
+    font-weight: bold;
+}
+
+h1 {
+    font-size: 2.5rem;
+    text-transform: uppercase;
+    /* Redacting/highlighting effect */
+    background: var(--fg);
+    color: var(--bg);
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    margin-left: -0.5rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-underline-offset: 0.3rem;
+}
+
+h3 {
+    font-size: 1.2rem;
+}
+
+/* Creates dense, academic blocks of text */
+p {
+    margin: 0 0 1.5rem;
+    text-align: justify;
+    hyphens: auto; 
+}
+
+ul, ol, blockquote, pre, table {
+    margin: 0 0 1.5rem;
+}
+
+ul, ol {
+    padding-left: 2rem;
+}
+
+/* Red pen markup style */
+a {
+    color: var(--link);
+    text-decoration: underline;
+    text-decoration-style: wavy;
+    text-underline-offset: 0.2em;
+    font-weight: bold;
+}
+
+a:hover {
+    background: var(--link);
+    color: var(--bg);
+    text-decoration: none;
+}
+
+img, svg, video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 2.5rem 0;
+    filter: grayscale(100%) contrast(1.2); /* Forces images into a photocopied aesthetic */
+    border: 2px solid var(--fg);
+}
+
+hr {
+    margin: 3rem 0;
+    border: 0;
+    text-align: center;
+}
+
+/* Classic typewriter asterisks divider */
+hr::before {
+    content: "***";
+    letter-spacing: 1em;
+    color: var(--muted);
+}
+
+blockquote {
+    margin-left: 0;
+    padding: 1rem 1.5rem;
+    border-left: none;
+    border-top: 1px solid var(--fg);
+    border-bottom: 1px solid var(--fg);
+    color: var(--muted);
+    font-style: italic;
+    background: transparent;
+}
+
+code, kbd {
+    font-family: inherit;
+    background: transparent;
+    border: 1px solid var(--muted);
+    padding: 0.1rem 0.3rem;
+    color: var(--fg);
+}
+
+pre {
+    overflow-x: auto;
+    padding: 1.5rem;
+    border: 2px solid var(--fg);
+    background: transparent;
+    line-height: 1.5;
+}
+
+pre code {
+    border: none;
+    padding: 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    border: 2px solid var(--fg);
+}
+
+th, td {
+    padding: 0.75rem;
+    border: 1px solid var(--fg);
+    text-align: left;
+}
+
+th {
+    font-weight: bold;
+    text-transform: uppercase;
+    background: var(--fg);
+    color: var(--bg);
+}
+
+.post-meta {
+    margin-top: -1rem;
+    margin-bottom: 2rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+    p {
+        text-align: left; /* Justify looks bad on mobile */
+    }
+}

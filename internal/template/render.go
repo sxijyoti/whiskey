@@ -2,8 +2,8 @@ package template
 
 import (
 	"bytes"
-	htmltemplate "html/template"
 	"github.com/sxijyoti/whiskey/internal/config"
+	htmltemplate "html/template"
 )
 
 type PageData struct {
@@ -17,12 +17,14 @@ type PageData struct {
 
 func RenderPage(
 	siteRoot string,
+	theme string,
 	layout string,
 	data PageData,
 ) ([]byte, error) {
 
 	tmpl, err := LoadLayout(
 		siteRoot,
+		theme,
 		layout,
 	)
 	if err != nil {
