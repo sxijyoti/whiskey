@@ -11,6 +11,7 @@ type Frontmatter struct {
 	Description string   `yaml:"description"`
 	Date        time.Time   `yaml:"date"`
 	Tags        []string `yaml:"tags"`
+	Collection  string    `yaml:"collection"`
 	Layout 	    string   `yaml:"layout"`
 	Draft	    bool     `yaml:"draft"`
 }

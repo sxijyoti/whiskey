@@ -124,8 +124,14 @@ func IncrementalBuild(
 		allPages, err := DiscoverPages(
 			contentRoot,
 		)
-
 		if err != nil {
+			return err
+		}
+
+		if err := BuildCollections(
+			root,
+			allPages,
+		); err != nil {
 			return err
 		}
 

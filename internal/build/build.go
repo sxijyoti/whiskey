@@ -167,6 +167,13 @@ func BuildSite(root string) error {
 		return err
 	}
 
+	if err := BuildCollections(
+		root,
+		pages,
+	); err != nil {
+		return err
+	}
+
 	if err := CopyStatic(root); err != nil {
 		return err
 	}

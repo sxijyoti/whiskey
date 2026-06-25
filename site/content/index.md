@@ -11,4 +11,6 @@ draft: false
 
 This is whiskey!
 
+![Logo](/images/logo.png)
+
 @include https://raw.githubusercontent.com/sxijyoti/whiskey/main/README.md
