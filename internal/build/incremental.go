@@ -27,6 +27,22 @@ func IncrementalBuild(
 		return err
 	}
 
+	store, err := fingerprint.Load(
+		".whiskey/fingerprints.json",
+	)
+	if err != nil {
+		return err
+	}
+
+	configHash := fingerprint.ConfigHash(
+		cfg,
+	)
+
+	oldConfig := store["__config__"]
+
+	configChanged :=
+		oldConfig.Hash != configHash
+
 	allPages, err := DiscoverPages(
 		contentRoot,
 	)
@@ -51,11 +67,24 @@ func IncrementalBuild(
 		return err
 	}
 
-	store, err := fingerprint.Load(
-		".whiskey/fingerprints.json",
-	)
-	if err != nil {
-		return err
+	if configChanged {
+		fmt.Println(
+			"[config] changed",
+		)
+
+		store["__config__"] =
+			fingerprint.Entry{
+				Hash: configHash,
+			}
+
+		if err := BuildSite(root); err != nil {
+			return err
+		}
+
+		return fingerprint.Save(
+			".whiskey/fingerprints.json",
+			store,
+		)
 	}
 
 	changedSources, err := fingerprint.ChangedSources(
@@ -162,6 +191,11 @@ func IncrementalBuild(
 			return err
 		}
 	}
+
+	store["__config__"] =
+		fingerprint.Entry{
+			Hash: configHash,
+		}
 
 	if err := fingerprint.Save(
 		".whiskey/fingerprints.json",

@@ -5,6 +5,7 @@ import (
 	
 	"github.com/sxijyoti/whiskey/internal/graph"
 	"github.com/sxijyoti/whiskey/internal/source"
+	"github.com/sxijyoti/whiskey/internal/config"
 )
 
 func ChangedSources(
@@ -109,4 +110,22 @@ func ChangedSources(
 	}
 
 	return changed, nil
+}
+
+// incase the config changes and rss description
+func ConfigHash(
+	cfg *config.Config,
+) string {
+
+	input :=
+		cfg.Theme +
+		cfg.BaseURL +
+		cfg.Title +
+		cfg.Description
+
+	for _, c := range cfg.RSS.Collections {
+		input += c
+	}
+
+	return SHA256([]byte(input))
 }
