@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/fingerprint"
 )
@@ -28,6 +29,13 @@ func LocalDirtyPages(
 			}
 
 			if d.IsDir() {
+				return nil
+			}
+
+			if strings.HasPrefix(
+				filepath.Base(path),
+				".",
+			) {
 				return nil
 			}
 

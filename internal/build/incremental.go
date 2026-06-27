@@ -50,14 +50,15 @@ func IncrementalBuild(
 		return err
 	}
 
-	nav, err := BuildNav(
+	index, err := BuildIndex(
 		root,
 		allPages,
 	)
 	if err != nil {
 		return err
 	}
-	cfg.Nav = nav
+
+	cfg.Nav = BuildNav(index)
 
 	g, err := graph.BuildSiteGraph(
 		root,
@@ -149,6 +150,20 @@ func IncrementalBuild(
 
 		for _, page := range dirty {
 
+			raw, err := os.ReadFile(page)
+			if err != nil {
+				return err
+			}
+
+			doc, err := parser.ParseFrontmatter(raw)
+			if err != nil {
+				return err
+			}
+
+			if doc.Meta.Draft {
+				continue
+			}
+
 			fmt.Printf(
 				"[build] %s\n",
 				page,
@@ -170,7 +185,7 @@ func IncrementalBuild(
 		if err := BuildCollections(
 			root,
 			cfg,
-			allPages,
+			index,
 		); err != nil {
 			return err
 		}
@@ -178,7 +193,7 @@ func IncrementalBuild(
 		if err := BuildTags(
 			root,
 			cfg,
-			allPages,
+			index,
 		); err != nil {
 			return err
 		}
@@ -186,7 +201,7 @@ func IncrementalBuild(
 		if err := BuildRSS(
 			root,
 			cfg,
-			allPages,
+			index,
 		); err != nil {
 			return err
 		}

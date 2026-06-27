@@ -1,109 +1,136 @@
 package build
 
 import (
-	"os"
-	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/config"
-	"github.com/sxijyoti/whiskey/internal/parser"
 )
 
-func BuildNav(root string, pages []string) ([]config.NavItem, error) {
-	contentRoot := filepath.Join(
-		root,
-		"content",
-	)
+func BuildNav(
+	index *SiteIndex,
+) []config.NavItem {
 
 	contentPages := map[string]config.NavItem{}
+
 	collections := map[string]config.NavItem{}
-	seenTags := map[string]struct{}{}
 
-	for _, page := range pages {
-		rawBytes, err := os.ReadFile(page)
-		if err != nil {
-			return nil, err
+	seenTags := false
+
+	for _, page := range index.Pages {
+
+		if len(page.Tags) > 0 {
+			seenTags = true
 		}
 
-		raw, err := parser.ParseFrontmatter(rawBytes)
-		if err != nil {
-			return nil, err
-		}
+		if page.Collection != "" {
 
-		if raw.Meta.Draft {
-			continue
-		}
+			if _, ok := collections[
+				page.Collection,
+			]; !ok {
 
-		rel, err := filepath.Rel(
-			contentRoot,
-			page,
-		)
-		if err != nil {
-			return nil, err
-		}
+				collections[
+					page.Collection,
+				] = config.NavItem{
 
-		slug := strings.TrimSuffix(
-			rel,
-			filepath.Ext(rel),
-		)
+					Title: DisplayName(
+						page.Collection,
+					),
 
-		for _, tag := range raw.Meta.Tags {
-			seenTags[tag] = struct{}{}
-		}
-
-		if raw.Meta.Collection != "" {
-			if _, ok := collections[raw.Meta.Collection]; !ok {
-				collections[raw.Meta.Collection] = config.NavItem{
-					Title: titleCase(raw.Meta.Collection),
-					URL:   "/" + raw.Meta.Collection + "/",
+					URL: "/" +
+						page.Collection +
+						"/",
 				}
 			}
 
 			continue
 		}
 
-		if slug == "index" {
+		if page.Slug == "index" {
 			continue
 		}
 
-		contentPages[slug] = config.NavItem{
-			Title: raw.Meta.Title,
-			URL:   "/" + slug + "/",
+		contentPages[
+			page.Slug,
+		] = config.NavItem{
+
+			Title: page.Title,
+
+			URL: page.URL,
 		}
 	}
 
-	items := []config.NavItem{{Title: "Home", URL: "/"}}
+	items := []config.NavItem{
+		{
+			Title: "Home",
+			URL: "/",
+		},
+	}
 
-	contentTitles := make([]string, 0, len(contentPages))
+	var pageNames []string
+
 	for slug := range contentPages {
-		contentTitles = append(contentTitles, slug)
-	}
-	sort.Strings(contentTitles)
-	for _, slug := range contentTitles {
-		items = append(items, contentPages[slug])
+
+		pageNames = append(
+			pageNames,
+			slug,
+		)
 	}
 
-	collectionNames := make([]string, 0, len(collections))
+	sort.Strings(
+		pageNames,
+	)
+
+	for _, slug := range pageNames {
+
+		items = append(
+			items,
+			contentPages[slug],
+		)
+	}
+
+	var collectionNames []string
+
 	for name := range collections {
-		collectionNames = append(collectionNames, name)
+
+		collectionNames = append(
+			collectionNames,
+			name,
+		)
 	}
-	sort.Strings(collectionNames)
+
+	sort.Strings(
+		collectionNames,
+	)
+
 	for _, name := range collectionNames {
-		items = append(items, collections[name])
+
+		items = append(
+			items,
+			collections[name],
+		)
 	}
 
-	if len(seenTags) > 0 {
-		items = append(items, config.NavItem{Title: "Tags", URL: "/tags/"})
+	if seenTags {
+
+		items = append(
+			items,
+			config.NavItem{
+				Title: "Tags",
+				URL: "/tags/",
+			},
+		)
 	}
 
-	return items, nil
-}
+	if len(index.Pages) > 0 {
 
-func titleCase(value string) string {
-	if value == "" {
-		return value
+		items = append(
+			items,
+			config.NavItem{
+				Title: "RSS",
+				URL: "/feed.xml",
+			},
+		)
 	}
 
-	return strings.ToUpper(value[:1]) + value[1:]
+	return items
 }

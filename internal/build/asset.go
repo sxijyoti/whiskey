@@ -28,6 +28,13 @@ func CopyAsset(
 	var rel string
 
 	if strings.HasPrefix(
+		filepath.Base(asset),
+		".",
+	) {
+		return nil
+	}
+
+	if strings.HasPrefix(
 		asset,
 		themeRoot,
 	) {
@@ -83,6 +90,13 @@ func DirtyAssets(
 	var assets []string
 
 	for _, node := range changed {
+
+		if strings.HasPrefix(
+			filepath.Base(node),
+			".",
+		) {
+			continue
+		}
 
 		n := g.Nodes[node]
 

@@ -3,11 +3,9 @@ package build
 import (
 	"encoding/xml"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/config"
-	"github.com/sxijyoti/whiskey/internal/parser"
 )
 
 type RSS struct {
@@ -32,84 +30,34 @@ type Item struct {
 func BuildRSS(
 	root string,
 	cfg *config.Config,
-	pages []string,
+	index *SiteIndex,
 ) error {
-
-	contentRoot := filepath.Join(
-		root,
-		"content",
-	)
 
 	allowed := map[string]bool{}
 
 	for _, collection := range cfg.RSS.Collections {
-
 		allowed[collection] = true
 	}
 
 	var items []Item
 
-	for _, page := range pages {
+	for _, page := range index.Pages {
 
-		raw, err := os.ReadFile(
-			page,
-		)
-
-		if err != nil {
-			return err
-		}
-
-		doc, err := parser.ParseFrontmatter(
-			raw,
-		)
-
-		if err != nil {
-			return err
-		}
-
-		if doc.Meta.Draft {
+		if !allowed[page.Collection] {
 			continue
 		}
-
-		if !allowed[
-			doc.Meta.Collection,
-		] {
-			continue
-		}
-
-		rel, err := filepath.Rel(
-			contentRoot,
-			page,
-		)
-
-		if err != nil {
-			return err
-		}
-
-		slug := strings.TrimSuffix(
-			rel,
-			filepath.Ext(rel),
-		)
 
 		url := strings.TrimRight(
 			cfg.BaseURL,
 			"/",
-		) + "/" + slug + "/"
-
-		if slug == "index" {
-
-			url = strings.TrimRight(
-				cfg.BaseURL,
-				"/",
-			) + "/"
-		}
+		) + page.URL
 
 		items = append(
 			items,
 			Item{
-				Title: doc.Meta.Title,
+				Title: page.Title,
 				Link:  url,
-				Date: doc.Meta.Date.Format(
+				Date: page.Date.Format(
 					"Mon, 02 Jan 2006 15:04:05 MST",
 				),
 			},
@@ -131,7 +79,6 @@ func BuildRSS(
 		"",
 		"  ",
 	)
-
 	if err != nil {
 		return err
 	}

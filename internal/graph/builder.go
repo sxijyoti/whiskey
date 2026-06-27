@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/dependency"
 	"github.com/sxijyoti/whiskey/internal/parser"
@@ -176,6 +177,13 @@ func BuildSiteGraph(
 				return nil
 			}
 
+			if strings.HasPrefix(
+				filepath.Base(path),
+				".",
+			) {
+				return nil
+			}
+
 			if filepath.Ext(path) != ".md" {
 				return nil
 			}
@@ -273,6 +281,13 @@ func BuildSiteGraph(
 				}
 
 				if d.IsDir() {
+					return nil
+				}
+
+				if strings.HasPrefix(
+					filepath.Base(path),
+					".",
+				) {
 					return nil
 				}
 

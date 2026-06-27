@@ -1,18 +1,38 @@
 {{ define "content" }}
 
-<main class="site-main list-page">
-
-<header class="list-header">
+<main class="site-main">
 
 <h1>{{ .Title }}</h1>
 
-{{ if .Description }}
-<p>{{ .Description }}</p>
+<div class="collection-list">
+
+{{ range .Pages }}
+
+<a class="collection-entry" href="{{ .URL }}">
+
+	<time class="collection-date">
+		{{ .DateLabel }}
+	</time>
+
+	<div class="collection-content">
+
+		<div class="collection-title">
+			{{ .Title }}
+		</div>
+
+		{{ if .Description }}
+		<div class="collection-description">
+			{{ .Description }}
+		</div>
+		{{ end }}
+
+	</div>
+
+</a>
+
 {{ end }}
 
-</header>
-
-{{ .Content }}
+</div>
 
 </main>
 

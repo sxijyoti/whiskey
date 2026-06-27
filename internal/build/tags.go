@@ -1,104 +1,18 @@
 package build
 
 import (
-	"html"
-	htmltemplate "html/template"
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/config"
-	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/template"
 )
-
-type TagPage struct {
-	Title string
-	URL   string
-	Date  string
-	Tags  []string
-}
 
 func BuildTags(
 	root string,
 	cfg *config.Config,
-	pages []string,
-) error {
-
-	tagMap := map[string][]TagPage{}
-
-	contentRoot := filepath.Join(
-		root,
-		"content",
-	)
-
-	for _, page := range pages {
-
-		raw, err := os.ReadFile(page)
-		if err != nil {
-			return err
-		}
-
-		doc, err := parser.ParseFrontmatter(
-			raw,
-		)
-
-		if err != nil {
-			return err
-		}
-
-		if doc.Meta.Draft {
-			continue
-		}
-
-		rel, err := filepath.Rel(
-			contentRoot,
-			page,
-		)
-
-		if err != nil {
-			return err
-		}
-
-		for _, tag := range doc.Meta.Tags {
-
-			slug := strings.TrimSuffix(
-				rel,
-				filepath.Ext(rel),
-			)
-
-			url := "/" + slug + "/"
-
-			if slug == "index" {
-				url = "/"
-			}
-
-			tagMap[tag] = append(
-				tagMap[tag],
-				TagPage{
-					Title: doc.Meta.Title,
-					URL:   url,
-					Date: doc.Meta.Date.Format(
-						"2006-01-02",
-					),
-					Tags: doc.Meta.Tags,
-				},
-			)
-		}
-	}
-
-	return writeTagPages(
-		root,
-		cfg,
-		tagMap,
-	)
-}
-
-func writeTagPages(
-	root string,
-	cfg *config.Config,
-	tags map[string][]TagPage,
+	index *SiteIndex,
 ) error {
 
 	if err := os.MkdirAll(
@@ -108,10 +22,19 @@ func writeTagPages(
 		return err
 	}
 
-	tagNames := make([]string, 0, len(tags))
-	for tag := range tags {
-		tagNames = append(tagNames, tag)
+	tagNames := make(
+		[]string,
+		0,
+		len(index.Tags),
+	)
+
+	for tag := range index.Tags {
+		tagNames = append(
+			tagNames,
+			tag,
+		)
 	}
+
 	sort.Strings(tagNames)
 
 	indexPage, err := template.RenderPage(
@@ -125,6 +48,7 @@ func writeTagPages(
 			Tags:        tagNames,
 		},
 	)
+
 	if err != nil {
 		return err
 	}
@@ -137,64 +61,45 @@ func writeTagPages(
 		return err
 	}
 
-	for tag, pages := range tags {
-		sort.Slice(pages, func(i, j int) bool {
-			if pages[i].Date == pages[j].Date {
-				return pages[i].Title < pages[j].Title
-			}
+	for tag, pages := range index.Tags {
 
-			return pages[i].Date > pages[j].Date
-		})
-
-		dir := filepath.Join(
-			"dist",
-			"tags",
+		if err := RenderList(
+			root,
+			cfg,
 			tag,
-		)
-
-		if err := os.MkdirAll(
-			dir,
-			0755,
+			pages,
+			filepath.Join(
+				"dist",
+				"tags",
+				tag,
+				"index.html",
+			),
 		); err != nil {
 			return err
 		}
+	}
 
-		var content strings.Builder
-		content.WriteString("<h1>")
-		content.WriteString(html.EscapeString(tag))
-		content.WriteString("</h1>")
+	return nil
+}
 
-		for _, p := range pages {
+func BuildCollections(
+	root string,
+	cfg *config.Config,
+	index *SiteIndex,
+) error {
 
-			content.WriteString("<p><a href=\"")
-			content.WriteString(html.EscapeString(p.URL))
-			content.WriteString("\">")
-			content.WriteString(html.EscapeString(p.Title))
-			content.WriteString("</a></p>")
-		}
+	for name, pages := range index.Collections {
 
-		page, err := template.RenderPage(
+		if err := RenderList(
 			root,
-			cfg.Theme,
-			"list",
-			template.PageData{
-				Site:        cfg,
-				Title: 		 DisplayName(tag),
-				Description: tag,
-				Content:     htmltemplate.HTML(content.String()),
-			},
-		)
-		if err != nil {
-			return err
-		}
-
-		if err := os.WriteFile(
+			cfg,
+			name,
+			pages,
 			filepath.Join(
-				dir,
+				"dist",
+				name,
 				"index.html",
 			),
-			page,
-			0644,
 		); err != nil {
 			return err
 		}

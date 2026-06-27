@@ -26,14 +26,14 @@ var themeListCmd = &cobra.Command{
 		args []string,
 	) error {
 
-		entries, err := os.ReadDir("themes")
+		pages, err := os.ReadDir("themes")
 		if err != nil {
 			return err
 		}
 
 		var themes []string
 
-		for _, entry := range entries {
+		for _, entry := range pages {
 			if !entry.IsDir() {
 				continue
 			}

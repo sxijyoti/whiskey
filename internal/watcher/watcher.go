@@ -24,6 +24,13 @@ func WatchRecursive(
 				return nil
 			}
 
+			if strings.HasPrefix(
+				filepath.Base(path),
+				".",
+			) {
+				return nil
+			}
+
 			return w.Add(path)
 		},
 	)

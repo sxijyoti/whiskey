@@ -12,7 +12,8 @@ type PageData struct {
 	Description string
 	Date        string
 	Tags        []string
-	Content     htmltemplate.HTML
+	Pages 		any
+	Content 	htmltemplate.HTML
 }
 
 func RenderPage(

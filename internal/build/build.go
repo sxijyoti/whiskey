@@ -96,13 +96,16 @@ func BuildSite(root string) error {
 		return err
 	}
 
-	nav, err := BuildNav(
+	index, err := BuildIndex(
 		root,
 		pages,
 	)
 	if err != nil {
 		return err
 	}
+
+	nav := BuildNav(index)
+	
 	cfg.Nav = nav
 
 	for _, page := range pages {
@@ -165,7 +168,7 @@ func BuildSite(root string) error {
 	if err := BuildTags(
 		root,
 		cfg,
-		pages,
+		index,
 	); err != nil {
 		return err
 	}
@@ -173,7 +176,7 @@ func BuildSite(root string) error {
 	if err := BuildRSS(
 		root,
 		cfg,
-		pages,
+		index,
 	); err != nil {
 		return err
 	}
@@ -181,7 +184,7 @@ func BuildSite(root string) error {
 	if err := BuildCollections(
 		root,
 		cfg,
-		pages,
+		index,
 	); err != nil {
 		return err
 	}

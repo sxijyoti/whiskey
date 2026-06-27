@@ -49,6 +49,10 @@ func copyDir(srcRoot, dstRoot string) error {
 			if d.IsDir() {
 				return nil
 			}
+			
+			if strings.HasPrefix(d.Name(), ".") {
+				return nil
+			}
 
 			rel, err := filepath.Rel(srcRoot, path)
 			if err != nil {
