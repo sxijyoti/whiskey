@@ -176,10 +176,10 @@ func writeTagPages(
 		page, err := template.RenderPage(
 			root,
 			cfg.Theme,
-			"page",
+			"list",
 			template.PageData{
 				Site:        cfg,
-				Title:       tag,
+				Title: 		 DisplayName(tag),
 				Description: tag,
 				Content:     htmltemplate.HTML(content.String()),
 			},

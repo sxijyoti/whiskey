@@ -218,6 +218,62 @@ td {
 	font-size: 0.95rem;
 }
 
+.list-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.list-header p {
+    color: var(--muted);
+}
+
+.collection-list {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+
+    margin-top: 2rem;
+}
+
+.collection-entry {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+
+    align-items: center;
+
+    padding: .45rem 0;
+
+    text-decoration: none;
+    color: var(--fg);
+
+    border-bottom: 1px dashed transparent;
+
+    transition:
+        color .15s ease,
+        border-color .15s ease;
+}
+
+.collection-entry:hover {
+    color: var(--link);
+    border-color: var(--border);
+}
+
+.collection-date {
+    color: var(--muted);
+    font-size: .9rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.collection-title {
+    font-weight: 500;
+}
+
+.collection-entry:hover .collection-title::before {
+    content: "> ";
+    color: var(--link);
+}
+
 @media (max-width: 640px) {
 	.site-header {
 		padding-top: 1.25rem;

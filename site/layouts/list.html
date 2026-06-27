@@ -1,0 +1,19 @@
+{{ define "content" }}
+
+<main class="site-main list-page">
+
+<header class="list-header">
+
+<h1>{{ .Title }}</h1>
+
+{{ if .Description }}
+<p>{{ .Description }}</p>
+{{ end }}
+
+</header>
+
+{{ .Content }}
+
+</main>
+
+{{ end }}

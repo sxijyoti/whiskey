@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/parser"
@@ -14,8 +15,10 @@ import (
 )
 
 type CollectionPage struct {
-	Title string
-	URL   string
+	Title       string
+	URL         string
+	Description string
+	Date        time.Time
 }
 
 func BuildCollections(
@@ -59,48 +62,89 @@ func BuildCollections(
 			return err
 		}
 
-		slug := rel[:len(rel)-3]
+		slug := strings.TrimSuffix(
+			rel,
+			filepath.Ext(rel),
+		)
 
 		collections[doc.Meta.Collection] = append(
 			collections[doc.Meta.Collection],
 			CollectionPage{
-				Title: doc.Meta.Title,
-				URL:   "/" + slug + "/",
+				Title:       doc.Meta.Title,
+				URL:         "/" + slug + "/",
+				Description: doc.Meta.Description,
+				Date:        doc.Meta.Date,
 			},
 		)
 	}
 
 	for name, entries := range collections {
-		sort.Slice(entries, func(i, j int) bool {
-			if entries[i].Title == entries[j].Title {
-				return entries[i].URL < entries[j].URL
-			}
 
-			return entries[i].Title < entries[j].Title
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].Date.After(
+				entries[j].Date,
+			)
 		})
 
 		var content strings.Builder
-		content.WriteString("<h1>")
-		content.WriteString(html.EscapeString(name))
-		content.WriteString("</h1>\n")
+
+		content.WriteString(
+			`<div class="collection-list">`,
+		)
 
 		for _, p := range entries {
 
-			content.WriteString("<p><a href=\"")
-			content.WriteString(html.EscapeString(p.URL))
-			content.WriteString("\">")
-			content.WriteString(html.EscapeString(p.Title))
-			content.WriteString("</a></p>\n")
+			content.WriteString(
+				`<a class="collection-entry" href="`,
+			)
+
+			content.WriteString(
+				html.EscapeString(
+					p.URL,
+				),
+			)
+
+			content.WriteString(`">`)
+
+			content.WriteString(
+				`<time class="collection-date">`,
+			)
+
+			content.WriteString(
+				p.Date.Format(
+					"2006-01-02",
+				),
+			)
+
+			content.WriteString(`</time>`)
+
+			content.WriteString(
+				`<span class="collection-title">`,
+			)
+
+			content.WriteString(
+				html.EscapeString(
+					p.Title,
+				),
+			)
+
+			content.WriteString(`</span>`)
+
+			content.WriteString(`</a>`)
 		}
+
+		content.WriteString(
+			`</div>`,
+		)
 
 		page, err := template.RenderPage(
 			root,
 			cfg.Theme,
-			"page",
+			"list",
 			template.PageData{
 				Site:        cfg,
-				Title:       name,
-				Description: name,
+				Title:       DisplayName(name),
+				Description: "",
 				Content:     htmltemplate.HTML(content.String()),
 			},
 		)

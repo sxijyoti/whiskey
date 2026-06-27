@@ -4,7 +4,7 @@ description: index page
 date: 2026-06-02
 tags:
   - index
-layout: page
+layout: index
 draft: false
 ---
 # Whiskey
