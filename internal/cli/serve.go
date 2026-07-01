@@ -15,6 +15,7 @@ import (
 	"github.com/sxijyoti/whiskey/internal/devserver"
 	"github.com/sxijyoti/whiskey/internal/source"
 	"github.com/sxijyoti/whiskey/internal/watcher"
+	"github.com/sxijyoti/whiskey/internal/parser"
 )
 
 var port int
@@ -121,6 +122,18 @@ var serveCmd = &cobra.Command{
 			return err
 		}
 
+		configFile := filepath.Join(
+			root,
+			"whiskey.toml",
+		)
+
+		if _, err := os.Stat(configFile); err == nil {
+
+			if err := w.Add(configFile); err != nil {
+				return err
+			}
+		}
+
 		debouncer := watcher.NewDebouncer(
 			750 * time.Millisecond,
 		)
@@ -165,21 +178,29 @@ var serveCmd = &cobra.Command{
 						}
 					}
 
+					if filepath.Ext(event.Name) == ".md" {
+
+						raw, err := os.ReadFile(event.Name)
+						if err == nil {
+
+							doc, err := parser.ParseFrontmatter(raw)
+							if err == nil && doc.Meta.Draft {
+								continue
+							}
+						}
+					}
+
 					fmt.Printf(
-						"[watch] queued: %s\n",
-						filepath.Base(
-							event.Name,
-						),
+						"[watch] %s changed\n",
+						filepath.Base(event.Name),
 					)
 
-					debouncer.Run(
-						func() {
+					changed := event.Name
+
+					debouncer.Run(func(path string) func() {
+						return func() {
 
 							start := time.Now()
-
-							fmt.Println(
-								"[watch] rebuilding...",
-							)
 
 							if err := build.IncrementalBuild(root); err != nil {
 
@@ -193,13 +214,12 @@ var serveCmd = &cobra.Command{
 
 							fmt.Printf(
 								"[watch] build complete (%v)\n",
-								time.Since(start).
-									Round(time.Millisecond),
+								time.Since(start).Round(time.Millisecond),
 							)
 
 							reloader.Broadcast()
-						},
-					)
+						}
+					}(changed))
 
 				case err, ok := <-w.Errors:
 

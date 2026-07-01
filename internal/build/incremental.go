@@ -34,15 +34,6 @@ func IncrementalBuild(
 		return err
 	}
 
-	configHash := fingerprint.ConfigHash(
-		cfg,
-	)
-
-	oldConfig := store["__config__"]
-
-	configChanged :=
-		oldConfig.Hash != configHash
-
 	allPages, err := DiscoverPages(
 		contentRoot,
 	)
@@ -58,7 +49,9 @@ func IncrementalBuild(
 		return err
 	}
 
-	cfg.Nav = BuildNav(index)
+	cfg.Nav = BuildNav(
+		index,
+	)
 
 	g, err := graph.BuildSiteGraph(
 		root,
@@ -68,32 +61,83 @@ func IncrementalBuild(
 		return err
 	}
 
-	if configChanged {
-		fmt.Println(
-			"[config] changed",
-		)
-
-		store["__config__"] =
-			fingerprint.Entry{
-				Hash: configHash,
-			}
-
-		if err := BuildSite(root); err != nil {
-			return err
-		}
-
-		return fingerprint.Save(
-			".whiskey/fingerprints.json",
-			store,
-		)
-	}
-
 	changedSources, err := fingerprint.ChangedSources(
 		g,
 		store,
 	)
 	if err != nil {
 		return err
+	}
+
+	fullBuild := false
+	reason := ""
+
+	configHash := fingerprint.ConfigHash(
+		cfg,
+	)
+
+	if store["__config__"].Hash != configHash {
+
+		store["__config__"] = fingerprint.Entry{
+			Hash: configHash,
+		}
+
+		fullBuild = true
+		reason = "config"
+	}
+
+	for _, source := range changedSources {
+
+		node := g.Nodes[source]
+		if node == nil {
+			continue
+		}
+
+		switch node.Type {
+
+		case graph.LayoutNode,
+			graph.PartialNode:
+
+			fullBuild = true
+
+			if reason == "" {
+				reason = "layout"
+			}
+		}
+	}
+
+	if fullBuild {
+
+		switch reason {
+
+		case "layout":
+
+			fmt.Println("[build] full rebuild (layout changed)")
+
+		case "config":
+
+			fmt.Println("[build] full rebuild (config changed)")
+
+		default:
+			fmt.Println("[build] full rebuild")
+		}
+
+		if err := BuildSite(root); err != nil {
+			return err
+		}
+
+		if err := fingerprint.UpdateLocalPages(
+			contentRoot,
+			store,
+		); err != nil {
+			return err
+		}
+
+
+		return fingerprint.Save(
+			".whiskey/fingerprints.json",
+			store,
+		)
 	}
 
 	dirtyAssets := DirtyAssets(
@@ -109,21 +153,65 @@ func IncrementalBuild(
 		return err
 	}
 
+	var filteredDirty []string
+
+	for _, page := range localDirty {
+
+		raw, err := os.ReadFile(page)
+		if err != nil {
+			return err
+		}
+
+		doc, err := parser.ParseFrontmatter(raw)
+		if err != nil {
+			return err
+		}
+
+		if doc.Meta.Draft {
+			continue
+		}
+
+		filteredDirty = append(
+			filteredDirty,
+			page,
+		)
+	}
+
 	dirty := planner.IncrementalDirtySet(
 		g,
-		localDirty,
+		filteredDirty,
 		changedSources,
 	)
+
 	if len(dirty) == 0 &&
 		len(dirtyAssets) == 0 {
 
 		if _, err := os.Stat("dist"); os.IsNotExist(err) {
-			return BuildSite(root)
+
+			if err := BuildSite(root); err != nil {
+				return err
+			}
+
+			if err := fingerprint.UpdateLocalPages(
+				contentRoot,
+				store,
+			); err != nil {
+				return err
+			}
+
+
+			return fingerprint.Save(
+				".whiskey/fingerprints.json",
+				store,
+			)
 		}
 
 		fmt.Println("[build] nothing changed")
+
 		return nil
 	}
+
+	fmt.Println("[build] incremental")
 
 	for _, asset := range dirtyAssets {
 
@@ -141,28 +229,38 @@ func IncrementalBuild(
 		}
 	}
 
-	if len(dirty) > 0 {
+	var pagesToBuild []string
+
+	for _, page := range dirty {
+
+		raw, err := os.ReadFile(page)
+		if err != nil {
+			return err
+		}
+
+		doc, err := parser.ParseFrontmatter(raw)
+		if err != nil {
+			return err
+		}
+
+		if doc.Meta.Draft {
+			continue
+		}
+
+		pagesToBuild = append(
+			pagesToBuild,
+			page,
+		)
+	}
+
+	if len(pagesToBuild) > 0 {
 
 		fmt.Printf(
 			"[build] %d dirty page(s)\n",
-			len(dirty),
+			len(pagesToBuild),
 		)
 
-		for _, page := range dirty {
-
-			raw, err := os.ReadFile(page)
-			if err != nil {
-				return err
-			}
-
-			doc, err := parser.ParseFrontmatter(raw)
-			if err != nil {
-				return err
-			}
-
-			if doc.Meta.Draft {
-				continue
-			}
+		for _, page := range pagesToBuild {
 
 			fmt.Printf(
 				"[build] %s\n",
@@ -180,7 +278,7 @@ func IncrementalBuild(
 		}
 	}
 
-	if len(localDirty) > 0 {
+	if len(filteredDirty) > 0 {
 
 		if err := BuildCollections(
 			root,
@@ -207,20 +305,10 @@ func IncrementalBuild(
 		}
 	}
 
-	store["__config__"] =
-		fingerprint.Entry{
-			Hash: configHash,
-		}
-
-	if err := fingerprint.Save(
+	return fingerprint.Save(
 		".whiskey/fingerprints.json",
 		store,
-	); err != nil {
-		return err
-	}
-
-	return nil
-
+	)
 }
 
 func rebuildPage(
@@ -230,7 +318,9 @@ func rebuildPage(
 	page string,
 ) error {
 
-	raw, err := os.ReadFile(page)
+	raw, err := os.ReadFile(
+		page,
+	)
 	if err != nil {
 		return err
 	}
@@ -252,16 +342,6 @@ func rebuildPage(
 	)
 	if err != nil {
 		return err
-	}
-
-	if doc.Meta.Draft {
-
-		fmt.Printf(
-			"[skip] draft %s\n",
-			page,
-		)
-
-		return nil
 	}
 
 	slug := strings.TrimSuffix(
