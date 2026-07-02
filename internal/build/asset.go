@@ -1,6 +1,7 @@
 package build
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -9,12 +10,13 @@ import (
 
 func CopyAsset(
 	root string,
+	theme string,
 	asset string,
 ) error {
 
 	themeRoot := filepath.Join(
 		"themes",
-		"default",
+		theme,
 		"static",
 	)
 
@@ -24,6 +26,13 @@ func CopyAsset(
 	)
 
 	var rel string
+
+	if strings.HasPrefix(
+		filepath.Base(asset),
+		".",
+	) {
+		return nil
+	}
 
 	if strings.HasPrefix(
 		asset,
@@ -40,6 +49,15 @@ func CopyAsset(
 		}
 
 		rel = r
+
+		siteOverride := filepath.Join(
+			siteRoot,
+			rel,
+		)
+
+		if _, err := os.Stat(siteOverride); err == nil {
+			asset = siteOverride
+		}
 
 	} else {
 
@@ -72,6 +90,13 @@ func DirtyAssets(
 	var assets []string
 
 	for _, node := range changed {
+
+		if strings.HasPrefix(
+			filepath.Base(node),
+			".",
+		) {
+			continue
+		}
 
 		n := g.Nodes[node]
 

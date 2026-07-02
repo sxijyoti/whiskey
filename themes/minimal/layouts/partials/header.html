@@ -1,0 +1,16 @@
+{{ define "header" }}
+
+<header class="site-header">
+	<div class="site-branding">
+		<a class="site-title" href="/">{{ .Site.Title }}</a>
+	</div>
+	{{ if .Site.Nav }}
+	<nav class="site-nav" aria-label="Primary navigation">
+		{{ range .Site.Nav }}
+		<a href="{{ .URL }}">{{ .Title }}</a>
+		{{ end }}
+	</nav>
+	{{ end }}
+</header>
+
+{{ end }}

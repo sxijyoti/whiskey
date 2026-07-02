@@ -1,0 +1,17 @@
+{{ define "content" }}
+
+<main class="site-main">
+<article class="post">
+
+<h1>{{ .Title }}</h1>
+
+{{ if .Date }}
+<p class="post-meta">{{ .Date }}</p>
+{{ end }}
+
+{{ .Content }}
+
+</article>
+</main>
+
+{{ end }}

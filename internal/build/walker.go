@@ -3,6 +3,7 @@ package build
 import (
 	"io/fs"
 	"path/filepath"
+	"strings"
 )
 
 func DiscoverPages(root string) ([]string, error) {
@@ -16,6 +17,13 @@ func DiscoverPages(root string) ([]string, error) {
 			}
 
 			if d.IsDir() {
+				return nil
+			}
+
+			if strings.HasPrefix(
+				filepath.Base(path),
+				".",
+			) {
 				return nil
 			}
 

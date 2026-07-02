@@ -26,6 +26,13 @@ func BuildPage(
 		return err
 	}
 
+	resolvedBody, err = parser.ExpandShortcodes(
+		resolvedBody,
+	)
+	if err != nil {
+		return err
+	}
+
 	html, err := parser.MdToHTML(
 		resolvedBody,
 	)
@@ -48,12 +55,14 @@ func BuildPage(
 
 	page, err := template.RenderPage(
 		siteRoot,
+		cfg.Theme,
 		layout,
 		template.PageData{
 			Site:        cfg,
 			Title:       doc.Meta.Title,
 			Description: doc.Meta.Description,
 			Date:        date,
+			Tags:        doc.Meta.Tags,
 			Content:     htmltemplate.HTML(html),
 		},
 	)
@@ -93,6 +102,18 @@ func BuildSite(root string) error {
 	if err != nil {
 		return err
 	}
+
+	index, err := BuildIndex(
+		root,
+		pages,
+	)
+	if err != nil {
+		return err
+	}
+
+	nav := BuildNav(index)
+	
+	cfg.Nav = nav
 
 	for _, page := range pages {
 
@@ -151,7 +172,41 @@ func BuildSite(root string) error {
 		}
 	}
 
-	if err := CopyStatic(root); err != nil {
+	if err := BuildTags(
+		root,
+		cfg,
+		index,
+	); err != nil {
+		return err
+	}
+
+	if err := BuildRSS(
+		root,
+		cfg,
+		index,
+	); err != nil {
+		return err
+	}
+
+	if err := BuildSitemap(
+		cfg,
+		index,
+	); err != nil {
+		return err
+	}
+
+	if err := BuildCollections(
+		root,
+		cfg,
+		index,
+	); err != nil {
+		return err
+	}
+
+	if err := CopyStatic(
+		root,
+		cfg.Theme,
+	); err != nil {
 		return err
 	}
 

@@ -5,6 +5,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
+	"unicode"
 )
 
 func copyFile(src, dst string) error {
@@ -47,6 +49,10 @@ func copyDir(srcRoot, dstRoot string) error {
 			if d.IsDir() {
 				return nil
 			}
+			
+			if strings.HasPrefix(d.Name(), ".") {
+				return nil
+			}
 
 			rel, err := filepath.Rel(srcRoot, path)
 			if err != nil {
@@ -63,10 +69,10 @@ func copyDir(srcRoot, dstRoot string) error {
 	)
 }
 
-func CopyStatic(siteRoot string) error {
+func CopyStatic(siteRoot, theme string) error {
 	themeStatic := filepath.Join(
 		"themes",
-		"default",
+		theme,
 		"static",
 	)
 
@@ -92,4 +98,43 @@ func CopyStatic(siteRoot string) error {
 	}
 
 	return nil
+}
+
+func DisplayName(
+	name string,
+) string {
+
+	name = strings.ReplaceAll(
+		name,
+		"-",
+		" ",
+	)
+
+	name = strings.ReplaceAll(
+		name,
+		"_",
+		" ",
+	)
+
+	words := strings.Fields(name)
+
+	for i, word := range words {
+
+		runes := []rune(strings.ToLower(word))
+
+		if len(runes) == 0 {
+			continue
+		}
+
+		runes[0] = unicode.ToUpper(
+			runes[0],
+		)
+
+		words[i] = string(runes)
+	}
+
+	return strings.Join(
+		words,
+		" ",
+	)
 }
