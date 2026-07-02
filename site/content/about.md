@@ -10,3 +10,5 @@ draft: false
 # About
 
 Whiskey is written in go. It aims to be a dependency aware SSG
+
+{{< youtube https://www.youtube.com/watch?v=dQw4w9WgXcQ >}}

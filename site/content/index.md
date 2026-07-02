@@ -11,6 +11,10 @@ draft: false
 
 This is whiskey!
 
-![Logo](/images/logo.png)
+{{< image
+src="/images/logo.png"
+class="site-main index-page"
+alt="Whiskey"
+>}}
 
 @include https://raw.githubusercontent.com/sxijyoti/whiskey/main/README.md

@@ -26,6 +26,13 @@ func BuildPage(
 		return err
 	}
 
+	resolvedBody, err = parser.ExpandShortcodes(
+		resolvedBody,
+	)
+	if err != nil {
+		return err
+	}
+
 	html, err := parser.MdToHTML(
 		resolvedBody,
 	)
