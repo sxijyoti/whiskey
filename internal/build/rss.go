@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"os"
 	"strings"
+	"path/filepath"
 
 	"github.com/sxijyoti/whiskey/internal/config"
 )
@@ -90,6 +91,76 @@ func BuildRSS(
 
 	return os.WriteFile(
 		"dist/feed.xml",
+		data,
+		0644,
+	)
+}
+
+type Sitemap struct {
+	XMLName xml.Name     `xml:"urlset"`
+	XMLNS   string       `xml:"xmlns,attr"`
+	URLs    []SitemapURL `xml:"url"`
+}
+
+type SitemapURL struct {
+	Location string `xml:"loc"`
+	LastMod  string `xml:"lastmod,omitempty"`
+}
+
+func BuildSitemap(
+	cfg *config.Config,
+	index *SiteIndex,
+) error {
+
+	var sitemap Sitemap
+
+	sitemap.XMLNS =
+		"http://www.sitemaps.org/schemas/sitemap/0.9"
+
+	base := cfg.BaseURL
+
+	for _, page := range index.Pages {
+
+		url := base + page.URL
+
+		entry := SitemapURL{
+			Location: url,
+		}
+
+		if !page.Date.IsZero() {
+
+			entry.LastMod =
+				page.Date.Format(
+					"2006-01-02",
+				)
+		}
+
+		sitemap.URLs = append(
+			sitemap.URLs,
+			entry,
+		)
+	}
+
+	data, err := xml.MarshalIndent(
+		sitemap,
+		"",
+		"  ",
+	)
+
+	if err != nil {
+		return err
+	}
+
+	data = append(
+		[]byte(xml.Header),
+		data...,
+	)
+
+	return os.WriteFile(
+		filepath.Join(
+			"dist",
+			"sitemap.xml",
+		),
 		data,
 		0644,
 	)

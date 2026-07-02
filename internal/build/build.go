@@ -188,6 +188,13 @@ func BuildSite(root string) error {
 		return err
 	}
 
+	if err := BuildSitemap(
+		cfg,
+		index,
+	); err != nil {
+		return err
+	}
+
 	if err := BuildCollections(
 		root,
 		cfg,

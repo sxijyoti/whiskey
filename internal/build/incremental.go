@@ -303,6 +303,13 @@ func IncrementalBuild(
 		); err != nil {
 			return err
 		}
+
+		if err := BuildSitemap(
+			cfg,
+			index,
+		); err != nil {
+			return err
+		}
 	}
 
 	return fingerprint.Save(
