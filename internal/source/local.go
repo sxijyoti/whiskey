@@ -1,9 +1,20 @@
 package source
 
-import "os"
+import(
+	"os"
+	"strings"
+)
 
 type Local struct {
 	Path string
+}
+
+type LocalFactory struct{}
+
+func init() {
+	Register(
+		LocalFactory{},
+	)
 }
 
 func (l Local) ID() string {
@@ -29,4 +40,26 @@ func (l Local) Metadata() (*Metadata, error) {
 			UTC().
 			String(),
 	}, nil
+}
+
+func (LocalFactory) Supports(
+	ref string,
+) bool {
+
+	return strings.HasPrefix(
+		ref,
+		"local:",
+	)
+}
+
+func (LocalFactory) New(
+	ref string,
+) Source {
+
+	return Local{
+		Path: strings.TrimPrefix(
+			ref,
+			"local:",
+		),
+	}
 }

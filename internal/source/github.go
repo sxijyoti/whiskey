@@ -3,21 +3,22 @@ package source
 import (
 	"io"
 	"net/http"
+	"strings"
 )
 
-type GitHub struct {
+type HTTP struct {
 	URL string
 }
 
-func (g GitHub) ID() string {
-	return g.URL
+func (h HTTP) ID() string {
+	return h.URL
 }
 
-func (g GitHub) Fetch() ([]byte, error) {
+func (h HTTP) Fetch() ([]byte, error) {
 
 	req, err := http.NewRequest(
 		http.MethodGet,
-		g.URL,
+		h.URL,
 		nil,
 	)
 	if err != nil {
@@ -46,11 +47,11 @@ func (g GitHub) Fetch() ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func (g GitHub) Metadata() (*Metadata, error) {
+func (h HTTP) Metadata() (*Metadata, error) {
 
 	req, err := http.NewRequest(
 		http.MethodHead,
-		g.URL,
+		h.URL,
 		nil,
 	)
 
@@ -77,4 +78,35 @@ func (g GitHub) Metadata() (*Metadata, error) {
 			"Last-Modified",
 		),
 	}, nil
+}
+
+type HTTPFactory struct{}
+
+func init() {
+	Register(
+		HTTPFactory{},
+	)
+}
+
+func (HTTPFactory) Supports(
+	ref string,
+) bool {
+
+	return strings.HasPrefix(
+		ref,
+		"http://",
+	) ||
+		strings.HasPrefix(
+			ref,
+			"https://",
+	)
+}
+
+func (HTTPFactory) New(
+	ref string,
+) Source {
+
+	return HTTP{
+		URL: ref,
+	}
 }

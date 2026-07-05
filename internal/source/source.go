@@ -10,3 +10,13 @@ type Source interface {
 	Fetch() ([]byte, error)
 	Metadata() (*Metadata, error)
 }
+
+type Factory interface {
+	Supports(
+		ref string,
+	) bool
+
+	New(
+		ref string,
+	) Source
+}
