@@ -2,6 +2,7 @@ package build
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -33,7 +34,11 @@ func DiscoverPages(root string) ([]string, error) {
 				return nil
 			}
 
-			pages = append(pages, path)
+			pages = append(
+				pages,
+				path,
+			)
+
 			return nil
 		},
 	)
@@ -45,9 +50,14 @@ func EnsureWorkspace(
 	root string,
 ) error {
 
-	_, err := source.LoadManifest(
+	if _, err := source.LoadManifest(
 		root,
-	)
+	); err != nil {
+		return err
+	}
 
-	return err
+	return os.MkdirAll(
+		source.WorkspaceDir(root),
+		0755,
+	)
 }
