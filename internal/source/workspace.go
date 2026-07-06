@@ -210,3 +210,53 @@ func DeleteWorkspace(
 		),
 	)
 }
+
+type Materialized struct {
+	Workspace string
+
+	ContentHash string
+
+	Metadata Metadata
+}
+
+func Materialize(
+	root string,
+	src Source,
+) (*Materialized, error) {
+
+	content, err := src.Fetch()
+	if err != nil {
+		return nil, err
+	}
+
+	meta, err := src.Metadata()
+	if err != nil {
+		return nil, err
+	}
+
+	hash := sha256.Sum256(
+		content,
+	)
+
+	contentHash := hex.EncodeToString(
+		hash[:],
+	)
+
+	if err := WriteWorkspace(
+		root,
+		src.ID(),
+		content,
+	); err != nil {
+		return nil, err
+	}
+
+	return &Materialized{
+		Workspace: WorkspaceName(
+			src.ID(),
+		),
+
+		ContentHash: contentHash,
+
+		Metadata: *meta,
+	}, nil
+}
