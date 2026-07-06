@@ -86,6 +86,12 @@ func BuildPage(
 
 func BuildSite(root string) error {
 
+	if err := EnsureWorkspace(
+		root,
+	); err != nil {
+		return err
+	}
+
 	cfg, err := config.Load(root)
 	if err != nil {
 		return err
@@ -149,6 +155,7 @@ func BuildSite(root string) error {
 		if slug == "index" {
 
 			output = filepath.Join(
+				root,
 				"dist",
 				"index.html",
 			)
@@ -156,6 +163,7 @@ func BuildSite(root string) error {
 		} else {
 
 			output = filepath.Join(
+				root,
 				"dist",
 				slug,
 				"index.html",
@@ -189,6 +197,7 @@ func BuildSite(root string) error {
 	}
 
 	if err := BuildSitemap(
+		root,
 		cfg,
 		index,
 	); err != nil {

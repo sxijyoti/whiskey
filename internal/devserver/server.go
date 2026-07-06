@@ -9,8 +9,14 @@ import (
 )
 
 func NewFileHandler(
+	root string,
 	dist string,
 ) http.Handler {
+
+	distRoot := filepath.Join(
+		root,
+		dist,
+	)
 
 	return http.HandlerFunc(
 		func(
@@ -19,7 +25,7 @@ func NewFileHandler(
 		) {
 
 			path := filepath.Join(
-				dist,
+				distRoot,
 				r.URL.Path,
 			)
 
@@ -38,6 +44,7 @@ func NewFileHandler(
 				if ctype := mime.TypeByExtension(
 					filepath.Ext(path),
 				); ctype != "" {
+
 					w.Header().Set(
 						"Content-Type",
 						ctype,
@@ -56,6 +63,7 @@ func NewFileHandler(
 			data, err := os.ReadFile(path)
 
 			if err != nil {
+
 				http.NotFound(
 					w,
 					r,
@@ -73,7 +81,7 @@ func NewFileHandler(
 				"text/html; charset=utf-8",
 			)
 
-			io.WriteString(
+			_, _ = io.WriteString(
 				w,
 				html,
 			)

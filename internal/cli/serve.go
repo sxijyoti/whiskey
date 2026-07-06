@@ -243,6 +243,7 @@ var serveCmd = &cobra.Command{
 		http.Handle(
 			"/",
 			devserver.NewFileHandler(
+				root,
 				"dist",
 			),
 		)

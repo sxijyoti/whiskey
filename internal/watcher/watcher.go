@@ -56,9 +56,16 @@ func IgnoreFile(path string) bool {
 
 	case strings.HasPrefix(name, ".#"):
 		return true
+
 	case strings.Contains(
 		path,
 		string(filepath.Separator)+"dist"+string(filepath.Separator),
+	):
+		return true
+
+	case strings.Contains(
+		path,
+		string(filepath.Separator)+".whiskey"+string(filepath.Separator),
 	):
 		return true
 
@@ -68,6 +75,7 @@ func IgnoreFile(path string) bool {
 }
 
 func IsStatic(path string) bool {
+
 	return strings.Contains(
 		path,
 		string(filepath.Separator)+"static"+string(filepath.Separator),
@@ -75,6 +83,7 @@ func IsStatic(path string) bool {
 }
 
 func IsLayout(path string) bool {
+
 	return strings.Contains(
 		path,
 		string(filepath.Separator)+"layouts"+string(filepath.Separator),
@@ -82,5 +91,6 @@ func IsLayout(path string) bool {
 }
 
 func IsConfig(path string) bool {
+
 	return filepath.Base(path) == "whiskey.toml"
 }

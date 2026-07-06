@@ -76,6 +76,7 @@ func CopyAsset(
 	return copyFile(
 		asset,
 		filepath.Join(
+			root,
 			"dist",
 			rel,
 		),

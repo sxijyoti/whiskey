@@ -17,6 +17,12 @@ func IncrementalBuild(
 	root string,
 ) error {
 
+	if err := EnsureWorkspace(
+		root,
+	); err != nil {
+		return err
+	}
+
 	contentRoot := filepath.Join(
 		root,
 		"content",
@@ -28,7 +34,11 @@ func IncrementalBuild(
 	}
 
 	store, err := fingerprint.Load(
-		".whiskey/fingerprints.json",
+		filepath.Join(
+			root,
+			".whiskey",
+			"fingerprints.json",
+		),
 	)
 	if err != nil {
 		return err
@@ -135,7 +145,11 @@ func IncrementalBuild(
 
 
 		return fingerprint.Save(
-			".whiskey/fingerprints.json",
+			filepath.Join(
+				root,
+				".whiskey",
+				"fingerprints.json",
+			),
 			store,
 		)
 	}
@@ -186,7 +200,7 @@ func IncrementalBuild(
 	if len(dirty) == 0 &&
 		len(dirtyAssets) == 0 {
 
-		if _, err := os.Stat("dist"); os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(root, "dist")); os.IsNotExist(err) {
 
 			if err := BuildSite(root); err != nil {
 				return err
@@ -201,7 +215,11 @@ func IncrementalBuild(
 
 
 			return fingerprint.Save(
-				".whiskey/fingerprints.json",
+				filepath.Join(
+					root,
+					".whiskey",
+					"fingerprints.json",
+				),
 				store,
 			)
 		}
@@ -305,6 +323,7 @@ func IncrementalBuild(
 		}
 
 		if err := BuildSitemap(
+			root,
 			cfg,
 			index,
 		); err != nil {
@@ -313,7 +332,11 @@ func IncrementalBuild(
 	}
 
 	return fingerprint.Save(
-		".whiskey/fingerprints.json",
+		filepath.Join(
+			root,
+			".whiskey",
+			"fingerprints.json",
+		),
 		store,
 	)
 }
@@ -361,6 +384,7 @@ func rebuildPage(
 	if slug == "index" {
 
 		output = filepath.Join(
+			root,
 			"dist",
 			"index.html",
 		)
@@ -368,6 +392,7 @@ func rebuildPage(
 	} else {
 
 		output = filepath.Join(
+			root,
 			"dist",
 			slug,
 			"index.html",

@@ -42,7 +42,11 @@ var checkCmd = &cobra.Command{
 		}
 
 		store, err := fingerprint.Load(
-			".whiskey/fingerprints.json",
+			filepath.Join(
+				root,
+				".whiskey",
+				"fingerprints.json",
+			),
 		)
 		if err != nil {
 			return err

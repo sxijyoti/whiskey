@@ -1,11 +1,12 @@
 BINARY := whiskey
+SITE := site
 
-.PHONY: whiskey build run serve test lint clean distclean install
+.PHONY: whiskey build run serve test lint clean fullclean install
 
 whiskey:
 	@make build
 	@make install
-	whiskey serve
+	whiskey serve $(SITE)
 
 build:
 	@mkdir -p bin
@@ -15,7 +16,7 @@ run:
 	go run ./cmd/whiskey
 
 serve:
-	go run ./cmd/whiskey serve
+	go run ./cmd/whiskey serve $(SITE)
 
 test:
 	go test ./...
@@ -27,10 +28,10 @@ install:
 	go install ./cmd/whiskey
 
 clean:
-	rm -rf dist
+	rm -rf $(SITE)/dist
 	rm -rf bin
 
 fullclean:
-	rm -rf dist
+	rm -rf $(SITE)/dist
+	rm -rf $(SITE)/.whiskey
 	rm -rf bin
-	rm -rf .whiskey
