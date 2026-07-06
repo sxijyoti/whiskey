@@ -4,6 +4,8 @@ import (
 	"io/fs"
 	"path/filepath"
 	"strings"
+
+	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 func DiscoverPages(root string) ([]string, error) {
@@ -37,4 +39,15 @@ func DiscoverPages(root string) ([]string, error) {
 	)
 
 	return pages, err
+}
+
+func EnsureWorkspace(
+	root string,
+) error {
+
+	_, err := source.LoadManifest(
+		root,
+	)
+
+	return err
 }
