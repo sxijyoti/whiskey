@@ -2,11 +2,8 @@ package build
 
 import (
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 func DiscoverPages(root string) ([]string, error) {
@@ -44,20 +41,4 @@ func DiscoverPages(root string) ([]string, error) {
 	)
 
 	return pages, err
-}
-
-func EnsureWorkspace(
-	root string,
-) error {
-
-	if _, err := source.LoadManifest(
-		root,
-	); err != nil {
-		return err
-	}
-
-	return os.MkdirAll(
-		source.WorkspaceDir(root),
-		0755,
-	)
 }

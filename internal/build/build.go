@@ -5,11 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"fmt"
 
 	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/dependency"
 	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/template"
+	"github.com/sxijyoti/whiskey/internal/source"
+	"github.com/sxijyoti/whiskey/internal/graph"
 )
 
 func BuildPage(
@@ -21,6 +24,24 @@ func BuildPage(
 
 	resolvedBody, err := dependency.ResolveIncludes(
 		doc.Body,
+		func(ref string) ([]byte, error) {
+
+			if !source.WorkspaceExists(
+				siteRoot,
+				ref,
+			) {
+
+				return nil, fmt.Errorf(
+					"workspace missing for %s",
+					ref,
+				)
+			}
+
+			return source.ReadWorkspace(
+				siteRoot,
+				ref,
+			)
+		},
 	)
 	if err != nil {
 		return err
@@ -106,6 +127,27 @@ func BuildSite(root string) error {
 		contentRoot,
 	)
 	if err != nil {
+		return err
+	}
+
+	g, err := graph.BuildSiteGraph(
+		root,
+		cfg.Theme,
+	)
+	if err != nil {
+		return err
+	}
+
+	manifest, err := source.LoadManifest(root)
+	if err != nil {
+		return err
+	}
+
+	if err := MaterializeSources(
+		root,
+		g,
+		manifest,
+	); err != nil {
 		return err
 	}
 

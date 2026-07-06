@@ -11,6 +11,7 @@ import (
 	"github.com/sxijyoti/whiskey/internal/graph"
 	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/planner"
+	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 func IncrementalBuild(
@@ -68,6 +69,21 @@ func IncrementalBuild(
 		cfg.Theme,
 	)
 	if err != nil {
+		return err
+	}
+
+	manifest, err := source.LoadManifest(
+		root,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := MaterializeSources(
+		root,
+		g,
+		manifest,
+	); err != nil {
 		return err
 	}
 

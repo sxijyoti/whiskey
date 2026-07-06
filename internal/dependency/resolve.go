@@ -2,26 +2,18 @@ package dependency
 
 import (
 	"strings"
-
-	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 func ResolveIncludes(
 	body string,
+	resolve func(string) ([]byte, error),
 ) (string, error) {
 
 	directives := Extract(body)
 
 	for _, d := range directives {
 
-		src, err := source.Resolve(
-			d.Ref,
-		)
-		if err != nil {
-			return "", err
-		}
-
-		content, err := src.Fetch()
+		content, err := resolve(d.Ref)
 		if err != nil {
 			return "", err
 		}
