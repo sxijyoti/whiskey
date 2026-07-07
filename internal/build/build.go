@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"fmt"
+	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/dependency"
@@ -25,6 +26,15 @@ func BuildPage(
 		doc.Body,
 		func(ref string) ([]byte, error) {
 
+			if strings.HasPrefix(ref, "local:") {
+				path := strings.TrimPrefix(
+					ref,
+					"local:",
+				)
+
+				return os.ReadFile(path)
+			}
+
 			if !source.WorkspaceExists(
 				siteRoot,
 				ref,
@@ -34,6 +44,14 @@ func BuildPage(
 					"workspace missing for %s",
 					ref,
 				)
+			}
+
+			if strings.HasPrefix(ref, "local:") {
+				path := strings.TrimPrefix(
+					ref,
+					"local:",
+				)
+				return os.ReadFile(path)
 			}
 
 			return source.ReadWorkspace(

@@ -3,6 +3,7 @@ package build
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/graph"
 	"github.com/sxijyoti/whiskey/internal/source"
@@ -51,6 +52,13 @@ func MaterializeSources(
 
 		if err != nil {
 			failed[node.ID] = err
+			continue
+		}
+
+		if strings.HasPrefix(
+			src.ID(),
+			"local:",
+		) {
 			continue
 		}
 
