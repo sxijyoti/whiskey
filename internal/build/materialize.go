@@ -33,6 +33,7 @@ func MaterializeSources(
 	failed := make(
 		map[string]error,
 	)
+	dirty := false
 
 	offlineCached := make(
 		map[string]bool,
@@ -53,48 +54,29 @@ func MaterializeSources(
 			continue
 		}
 
-		meta, err := src.Metadata()
-
-		if err != nil {
-
+		if source.Offline {
 			if source.WorkspaceExists(
 				root,
 				src.ID(),
 			) {
-
 				offlineCached[src.ID()] = true
 
 				fmt.Printf(
-					"[source] %s (offline cached)\n",
+					"[source] %s (offline)\n",
 					src.ID(),
 				)
 
 				continue
 			}
 
-			failed[src.ID()] = err
-
-			fmt.Printf(
-				"[source] %s (metadata failed): %v\n",
-				src.ID(),
-				err,
+			failed[src.ID()] = fmt.Errorf(
+				"workspace missing",
 			)
 
 			continue
 		}
 
 		entry, exists := manifest.Sources[src.ID()]
-
-		if exists &&
-			source.WorkspaceExists(
-				root,
-				src.ID(),
-			) &&
-			entry.State["etag"] == meta.ETag &&
-			entry.State["last_modified"] == meta.LastModified {
-
-			continue
-		}
 
 		result, err := source.Materialize(
 			root,
@@ -111,7 +93,7 @@ func MaterializeSources(
 				offlineCached[src.ID()] = true
 
 				fmt.Printf(
-					"[source] %s (offline cached)\n",
+					"[source] %s (cached)\n",
 					src.ID(),
 				)
 
@@ -129,14 +111,35 @@ func MaterializeSources(
 			continue
 		}
 
-		manifest.Sources[src.ID()] = source.ManifestEntry{
-			Workspace: result.Workspace,
-			ContentHash: result.ContentHash,
-			State: map[string]string{
-				"etag":          result.Metadata.ETag,
-				"last_modified": result.Metadata.LastModified,
-			},
+		if exists &&
+			entry.ContentHash == result.ContentHash {
+			fmt.Printf(
+				"[source] %s (unchanged)\n",
+				src.ID(),
+			)
+
+			continue
 		}
+
+		if err := source.WriteWorkspace(
+			root,
+			src.ID(),
+			result.Content,
+		); err != nil {
+			failed[src.ID()] = err
+			fmt.Printf(
+				"[source] %s (failed): %v\n",
+				src.ID(),
+				err,
+			)
+			continue
+		}
+
+		manifest.Sources[src.ID()] = source.ManifestEntry{
+			Workspace:   result.Workspace,
+			ContentHash: result.ContentHash,
+		}
+		dirty = true
 
 		fmt.Printf(
 			"[source] %s (updated)\n",
@@ -144,16 +147,18 @@ func MaterializeSources(
 		)
 	}
 
-	if err := source.SaveManifest(
-		root,
-		manifest,
-	); err != nil {
-		return nil, err
+	if dirty {
+		if err := source.SaveManifest(
+			root,
+			manifest,
+		); err != nil {
+			return nil, err
+		}
 	}
 
 	return &MaterializationResult{
-		Failed:         failed,
-		OfflineCached:  offlineCached,
+		Failed:        failed,
+		OfflineCached: offlineCached,
 	}, nil
 }
 

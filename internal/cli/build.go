@@ -4,9 +4,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/sxijyoti/whiskey/internal/build"
+	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 var full bool
+var offline bool
 
 var buildCmd = &cobra.Command{
 	Use:   "build [site-root]",
@@ -23,6 +25,8 @@ var buildCmd = &cobra.Command{
 		if len(args) == 1 {
 			root = args[0]
 		}
+
+		source.Offline = offline
 
 		if full {
 			return build.BuildSite(
@@ -43,6 +47,13 @@ func init() {
 		"full",
 		false,
 		"force full rebuild",
+	)
+
+	buildCmd.Flags().BoolVar(
+		&offline,
+		"offline",
+		false,
+		"build using cached remote sources only",
 	)
 
 	rootCmd.AddCommand(

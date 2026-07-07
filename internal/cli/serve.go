@@ -13,9 +13,9 @@ import (
 	"github.com/sxijyoti/whiskey/internal/build"
 	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/devserver"
+	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/source"
 	"github.com/sxijyoti/whiskey/internal/watcher"
-	"github.com/sxijyoti/whiskey/internal/parser"
 )
 
 var port int
@@ -46,6 +46,8 @@ var serveCmd = &cobra.Command{
 		if len(args) == 1 {
 			root = args[0]
 		}
+
+		source.Offline = offline
 
 		if err := build.IncrementalBuild(root); err != nil {
 			return err
@@ -272,6 +274,13 @@ func init() {
 		"p",
 		8080,
 		"server port",
+	)
+
+	serveCmd.Flags().BoolVar(
+		&offline,
+		"offline",
+		false,
+		"build using cached remote sources only",
 	)
 
 	rootCmd.AddCommand(

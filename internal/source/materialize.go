@@ -5,14 +5,6 @@ import (
 	"encoding/hex"
 )
 
-type Materialized struct {
-	Workspace string
-
-	ContentHash string
-
-	Metadata Metadata
-}
-
 func Materialize(
 	root string,
 	src Source,
@@ -36,22 +28,14 @@ func Materialize(
 		hash[:],
 	)
 
-	if err := WriteWorkspace(
-		root,
-		src.ID(),
-		content,
-	); err != nil {
-		return nil, err
-	}
-
 	return &Materialized{
 		Workspace: WorkspaceName(
 			src.ID(),
 		),
+		Content: content,
 
 		ContentHash: contentHash,
 
 		Metadata: *meta,
 	}, nil
 }
-
