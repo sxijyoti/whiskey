@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/sxijyoti/whiskey/internal/transform"
 )
 
 type HTTP struct {
@@ -50,7 +52,6 @@ func (h HTTP) Fetch() ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	// Reject non-success responses.
 	if resp.StatusCode < http.StatusOK ||
 		resp.StatusCode >= http.StatusMultipleChoices {
 
@@ -61,8 +62,21 @@ func (h HTTP) Fetch() ([]byte, error) {
 		)
 	}
 
-	return io.ReadAll(
+	body, err := io.ReadAll(
 		resp.Body,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	contentType := resp.Header.Get(
+		"Content-Type",
+	)
+
+	return transform.Process(
+		h.URL,
+		contentType,
+		body,
 	)
 }
 
@@ -89,7 +103,6 @@ func (h HTTP) Metadata() (*Metadata, error) {
 	}
 	defer resp.Body.Close()
 
-	// Reject non-success responses.
 	if resp.StatusCode < http.StatusOK ||
 		resp.StatusCode >= http.StatusMultipleChoices {
 
@@ -104,6 +117,7 @@ func (h HTTP) Metadata() (*Metadata, error) {
 		ETag: resp.Header.Get(
 			"ETag",
 		),
+
 		LastModified: resp.Header.Get(
 			"Last-Modified",
 		),
@@ -222,9 +236,9 @@ func (h HTTP) ConditionalMetadata(
 	if resp.StatusCode == http.StatusNotModified {
 
 		return &Metadata{
-			ETag: old.ETag,
+			ETag:         old.ETag,
 			LastModified: old.LastModified,
-			NotModified: true,
+			NotModified:  true,
 		}, nil
 	}
 
@@ -239,7 +253,11 @@ func (h HTTP) ConditionalMetadata(
 	}
 
 	return &Metadata{
-		ETag: resp.Header.Get("ETag"),
-		LastModified: resp.Header.Get("Last-Modified"),
+		ETag: resp.Header.Get(
+			"ETag",
+		),
+		LastModified: resp.Header.Get(
+			"Last-Modified",
+		),
 	}, nil
 }
