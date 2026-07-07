@@ -1,19 +1,19 @@
 package fingerprint
 
 import (
-	"os"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/sxijyoti/whiskey/internal/parser"
-	
-	"github.com/sxijyoti/whiskey/internal/graph"
-	"github.com/sxijyoti/whiskey/internal/source"
 	"github.com/sxijyoti/whiskey/internal/config"
+	"github.com/sxijyoti/whiskey/internal/graph"
+	"github.com/sxijyoti/whiskey/internal/parser"
+	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 func ChangedSources(
+	root string,
 	g *graph.Graph,
 	store Store,
 ) ([]string, error) {
@@ -26,49 +26,17 @@ func ChangedSources(
 
 		case graph.SourceNode:
 
-			src, err := source.Resolve(
+			data, err := source.ReadWorkspace(
+				root,
 				node.ID,
 			)
-
 			if err != nil {
-				return nil, err
-			}
-
-			meta, err := src.Metadata()
-
-			if err != nil {
-				return nil, err
-			}
-
-			old := store[node.ID]
-
-			needsFetch := true
-
-			if old.ETag != "" &&
-				meta.ETag != "" {
-
-				needsFetch =
-					old.ETag != meta.ETag
-			}
-
-			if old.LastModified != "" &&
-				meta.LastModified != "" {
-
-				needsFetch =
-					old.LastModified != meta.LastModified
-			}
-
-			if !needsFetch {
 				continue
 			}
 
-			hash, err := FingerprintSource(
-				src,
-			)
+			hash := SHA256(data)
 
-			if err != nil {
-				return nil, err
-			}
+			old := store[node.ID]
 
 			if old.Hash != hash {
 
@@ -76,12 +44,10 @@ func ChangedSources(
 					changed,
 					node.ID,
 				)
-			}
 
-			store[node.ID] = Entry{
-				Hash: hash,
-				ETag: meta.ETag,
-				LastModified: meta.LastModified,
+				store[node.ID] = Entry{
+					Hash: hash,
+				}
 			}
 
 		case graph.LayoutNode,
@@ -91,7 +57,6 @@ func ChangedSources(
 			data, err := os.ReadFile(
 				node.ID,
 			)
-
 			if err != nil {
 				continue
 			}
@@ -124,9 +89,9 @@ func ConfigHash(
 
 	input :=
 		cfg.Theme +
-		cfg.BaseURL +
-		cfg.Title +
-		cfg.Description
+			cfg.BaseURL +
+			cfg.Title +
+			cfg.Description
 
 	for _, c := range cfg.RSS.Collections {
 		input += c

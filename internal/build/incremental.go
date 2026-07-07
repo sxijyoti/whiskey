@@ -11,11 +11,18 @@ import (
 	"github.com/sxijyoti/whiskey/internal/graph"
 	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/planner"
+	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 func IncrementalBuild(
 	root string,
 ) error {
+
+	if err := EnsureWorkspace(
+		root,
+	); err != nil {
+		return err
+	}
 
 	contentRoot := filepath.Join(
 		root,
@@ -28,7 +35,11 @@ func IncrementalBuild(
 	}
 
 	store, err := fingerprint.Load(
-		".whiskey/fingerprints.json",
+		filepath.Join(
+			root,
+			".whiskey",
+			"fingerprints.json",
+		),
 	)
 	if err != nil {
 		return err
@@ -41,6 +52,7 @@ func IncrementalBuild(
 		return err
 	}
 
+	// This initial index serves the global Navigation layout.
 	index, err := BuildIndex(
 		root,
 		allPages,
@@ -61,7 +73,28 @@ func IncrementalBuild(
 		return err
 	}
 
+	manifest, err := source.LoadManifest(
+		root,
+	)
+	if err != nil {
+		return err
+	}
+
+	materialized, err := MaterializeSources(
+		root,
+		g,
+		manifest,
+	)
+	if err := GarbageCollectWorkspace(
+		root,
+		g,
+		manifest,
+	); err != nil {
+		return err
+	}
+
 	changedSources, err := fingerprint.ChangedSources(
+		root,
 		g,
 		store,
 	)
@@ -111,11 +144,9 @@ func IncrementalBuild(
 		switch reason {
 
 		case "layout":
-
 			fmt.Println("[build] full rebuild (layout changed)")
 
 		case "config":
-
 			fmt.Println("[build] full rebuild (config changed)")
 
 		default:
@@ -133,9 +164,12 @@ func IncrementalBuild(
 			return err
 		}
 
-
 		return fingerprint.Save(
-			".whiskey/fingerprints.json",
+			filepath.Join(
+				root,
+				".whiskey",
+				"fingerprints.json",
+			),
 			store,
 		)
 	}
@@ -186,7 +220,7 @@ func IncrementalBuild(
 	if len(dirty) == 0 &&
 		len(dirtyAssets) == 0 {
 
-		if _, err := os.Stat("dist"); os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(root, "dist")); os.IsNotExist(err) {
 
 			if err := BuildSite(root); err != nil {
 				return err
@@ -199,15 +233,17 @@ func IncrementalBuild(
 				return err
 			}
 
-
 			return fingerprint.Save(
-				".whiskey/fingerprints.json",
+				filepath.Join(
+					root,
+					".whiskey",
+					"fingerprints.json",
+				),
 				store,
 			)
 		}
 
 		fmt.Println("[build] nothing changed")
-
 		return nil
 	}
 
@@ -230,6 +266,7 @@ func IncrementalBuild(
 	}
 
 	var pagesToBuild []string
+	failedIncrementalPages := make(map[string]bool)
 
 	for _, page := range dirty {
 
@@ -244,6 +281,38 @@ func IncrementalBuild(
 		}
 
 		if doc.Meta.Draft {
+			continue
+		}
+
+		rel, _ := filepath.Rel(contentRoot, page)
+		slug := strings.TrimSuffix(rel, filepath.Ext(rel))
+
+		skip := false
+		for _, dep := range g.Dependencies(page) {
+			if materialized.OfflineCached[dep] {
+				continue
+			}
+
+			if _, failed := materialized.Failed[dep]; failed {
+				output, err := pageOutputPath(
+					root,
+					contentRoot,
+					page,
+				)
+				if err == nil {
+					_ = os.Remove(output)
+				}
+				fmt.Printf(
+					"[build] skipped %s (missing %s)\n",
+					page,
+					dep,
+				)
+				failedIncrementalPages[slug] = true
+				skip = true
+				break
+			}
+		}
+		if skip {
 			continue
 		}
 
@@ -273,17 +342,56 @@ func IncrementalBuild(
 				contentRoot,
 				page,
 			); err != nil {
-				return err
+				rel, _ := filepath.Rel(contentRoot, page)
+				slug := strings.TrimSuffix(rel, filepath.Ext(rel))
+				failedIncrementalPages[slug] = true
+				
+				output, errPath := pageOutputPath(root, contentRoot, page)
+				if errPath == nil {
+					_ = os.Remove(output)
+				}
+				
+				fmt.Printf("[build] failed to rebuild %s: %v\n", page, err)
+				continue
 			}
 		}
 	}
 
-	if len(filteredDirty) > 0 {
+	// Always rebuild secondary indexes if assets, page changes, or structural dirty steps occurred
+	if len(filteredDirty) > 0 || len(pagesToBuild) > 0 {
+
+		var fullyVerifiedPages []string
+
+		for _, p := range allPages {
+			rel, _ := filepath.Rel(contentRoot, p)
+			slug := strings.TrimSuffix(rel, filepath.Ext(rel))
+
+			// Check if it failed during this specific execution step
+			if failedIncrementalPages[slug] {
+				continue
+			}
+
+			// Verify the output file actually physically exists in the distribution directory
+			output, err := pageOutputPath(root, contentRoot, p)
+			if err != nil {
+				continue
+			}
+
+			if _, err := os.Stat(output); err == nil {
+				fullyVerifiedPages = append(fullyVerifiedPages, p)
+			}
+		}
+
+		// Generate a isolated, metadata-clean tracking index
+		cleanIncrementalIndex, err := BuildIndex(root, fullyVerifiedPages)
+		if err != nil {
+			return err
+		}
 
 		if err := BuildCollections(
 			root,
 			cfg,
-			index,
+			cleanIncrementalIndex,
 		); err != nil {
 			return err
 		}
@@ -291,7 +399,7 @@ func IncrementalBuild(
 		if err := BuildTags(
 			root,
 			cfg,
-			index,
+			cleanIncrementalIndex,
 		); err != nil {
 			return err
 		}
@@ -299,21 +407,26 @@ func IncrementalBuild(
 		if err := BuildRSS(
 			root,
 			cfg,
-			index,
+			cleanIncrementalIndex,
 		); err != nil {
 			return err
 		}
 
 		if err := BuildSitemap(
+			root,
 			cfg,
-			index,
+			cleanIncrementalIndex,
 		); err != nil {
 			return err
 		}
 	}
 
 	return fingerprint.Save(
-		".whiskey/fingerprints.json",
+		filepath.Join(
+			root,
+			".whiskey",
+			"fingerprints.json",
+		),
 		store,
 	)
 }
@@ -343,7 +456,8 @@ func rebuildPage(
 		return nil
 	}
 
-	rel, err := filepath.Rel(
+	output, err := pageOutputPath(
+		root,
 		contentRoot,
 		page,
 	)
@@ -351,33 +465,50 @@ func rebuildPage(
 		return err
 	}
 
+	if err := BuildPage(
+		root,
+		cfg,
+		doc,
+		output,
+	); err != nil {
+		_ = os.Remove(output)
+		return err
+	}
+
+	return nil
+}
+
+func pageOutputPath(
+	root string,
+	contentRoot string,
+	page string,
+) (string, error) {
+
+	rel, err := filepath.Rel(
+		contentRoot,
+		page,
+	)
+	if err != nil {
+		return "", err
+	}
+
 	slug := strings.TrimSuffix(
 		rel,
 		filepath.Ext(rel),
 	)
 
-	var output string
-
 	if slug == "index" {
-
-		output = filepath.Join(
+		return filepath.Join(
+			root,
 			"dist",
 			"index.html",
-		)
-
-	} else {
-
-		output = filepath.Join(
-			"dist",
-			slug,
-			"index.html",
-		)
+		), nil
 	}
 
-	return BuildPage(
+	return filepath.Join(
 		root,
-		cfg,
-		doc,
-		output,
-	)
+		"dist",
+		slug,
+		"index.html",
+	), nil
 }

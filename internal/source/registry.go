@@ -1,43 +1,31 @@
 package source
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
+
+var registry []Factory
+
+func Register(
+	f Factory,
+) {
+	registry = append(
+		registry,
+		f,
+	)
+}
 
 func Resolve(
 	ref string,
 ) (Source, error) {
 
-	if strings.HasPrefix(
-		ref,
-		"http://",
-	) || strings.HasPrefix(
-		ref,
-		"https://",
-	) {
+	for _, factory := range registry {
 
-		return GitHub{
-			URL: ref,
-		}, nil
+		if factory.Supports(ref) {
+			return factory.New(ref), nil
+		}
 	}
 
-	if strings.HasPrefix(
+	return nil, fmt.Errorf(
+		"unsupported source: %s",
 		ref,
-		"local:",
-	) {
-
-		return Local{
-			Path: strings.TrimPrefix(
-				ref,
-				"local:",
-			),
-		}, nil
-	}
-
-	return nil,
-		fmt.Errorf(
-			"unknown source: %s",
-			ref,
-		)
+	)
 }

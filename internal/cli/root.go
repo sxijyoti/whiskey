@@ -18,3 +18,10 @@ func Execute() {
 		os.Exit(1)
 	}
 }
+
+func siteRoot(args []string) string {
+	if len(args) == 1 {
+		return args[0]
+	}
+	return "site"
+}

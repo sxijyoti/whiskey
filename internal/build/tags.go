@@ -15,8 +15,14 @@ func BuildTags(
 	index *SiteIndex,
 ) error {
 
+	tagRoot := filepath.Join(
+		root,
+		"dist",
+		"tags",
+	)
+
 	if err := os.MkdirAll(
-		"dist/tags",
+		tagRoot,
 		0755,
 	); err != nil {
 		return err
@@ -48,13 +54,15 @@ func BuildTags(
 			Tags:        tagNames,
 		},
 	)
-
 	if err != nil {
 		return err
 	}
 
 	if err := os.WriteFile(
-		"dist/tags/index.html",
+		filepath.Join(
+			tagRoot,
+			"index.html",
+		),
 		indexPage,
 		0644,
 	); err != nil {
@@ -69,6 +77,7 @@ func BuildTags(
 			tag,
 			pages,
 			filepath.Join(
+				root,
 				"dist",
 				"tags",
 				tag,
@@ -96,6 +105,7 @@ func BuildCollections(
 			name,
 			pages,
 			filepath.Join(
+				root,
 				"dist",
 				name,
 				"index.html",

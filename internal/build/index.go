@@ -6,8 +6,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"fmt"
 
 	"github.com/sxijyoti/whiskey/internal/parser"
+	"github.com/sxijyoti/whiskey/internal/graph"
+	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 type Page struct {
@@ -165,4 +168,123 @@ func BuildIndex(
 	}
 
 	return index, nil
+}
+
+func GarbageCollectWorkspace(
+	root string,
+	g *graph.Graph,
+	manifest *source.Manifest,
+) error {
+
+	alive := make(
+		map[string]bool,
+	)
+
+	// All currently referenced remote sources.
+	for _, node := range g.Nodes {
+
+		if node.Type == graph.SourceNode {
+			alive[node.ID] = true
+		}
+	}
+
+	dirty := false
+
+	// Remove orphaned manifest entries + workspace files.
+	for ref, entry := range manifest.Sources {
+
+		if alive[ref] {
+			continue
+		}
+
+		path := filepath.Join(
+			source.WorkspaceDir(root),
+			entry.Workspace,
+		)
+
+		if err := os.Remove(path); err == nil {
+
+			fmt.Printf(
+				"[gc] removed %s\n",
+				entry.Workspace,
+			)
+
+		} else if !os.IsNotExist(err) {
+
+			return err
+		}
+
+		delete(
+			manifest.Sources,
+			ref,
+		)
+
+		dirty = true
+	}
+
+	// Remove stray workspace files not referenced by the manifest.
+	entries, err := os.ReadDir(
+		source.WorkspaceDir(root),
+	)
+
+	if err == nil {
+
+		keep := make(
+			map[string]bool,
+		)
+
+		for _, entry := range manifest.Sources {
+			keep[entry.Workspace] = true
+		}
+
+		for _, file := range entries {
+
+			if file.IsDir() {
+				continue
+			}
+
+			if keep[file.Name()] {
+				continue
+			}
+
+			path := filepath.Join(
+				source.WorkspaceDir(root),
+				file.Name(),
+			)
+
+			if err := os.Remove(path); err != nil &&
+				!os.IsNotExist(err) {
+				return err
+			}
+
+			fmt.Printf(
+				"[gc] removed %s\n",
+				file.Name(),
+			)
+		}
+	}
+
+	if dirty {
+
+		if err := source.SaveManifest(
+			root,
+			manifest,
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (si *SiteIndex) FilteredPages(failedPaths map[string]bool) []Page {
+	var valid []Page
+	for _, p := range si.Pages {
+		// assuming p.Slug or an explicit p.Path is trackable
+		if failedPaths[p.Slug] { 
+			continue
+		}
+		valid = append(valid, p)
+	}
+	return valid
 }

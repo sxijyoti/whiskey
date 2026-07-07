@@ -22,11 +22,7 @@ var checkCmd = &cobra.Command{
 		args []string,
 	) error {
 
-		root := "site"
-
-		if len(args) == 1 {
-			root = args[0]
-		}
+		root := siteRoot(args)
 
 		cfg, err := config.Load(root)
 		if err != nil {
@@ -42,7 +38,11 @@ var checkCmd = &cobra.Command{
 		}
 
 		store, err := fingerprint.Load(
-			".whiskey/fingerprints.json",
+			filepath.Join(
+				root,
+				".whiskey",
+				"fingerprints.json",
+			),
 		)
 		if err != nil {
 			return err
@@ -66,6 +66,7 @@ var checkCmd = &cobra.Command{
 		}
 
 		changed, err := fingerprint.ChangedSources(
+			root,
 			g,
 			store,
 		)

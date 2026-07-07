@@ -1,6 +1,11 @@
 ---
-title: Second
-draft: true
+title: Second Blog
+description: second blog
+date: 2026-06-03
+collection: blog
+tags:
+  - blog
+layout: post
 ---
 
- This should show up on the site
+this is the second blog!

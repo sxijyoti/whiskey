@@ -31,7 +31,11 @@ func DiscoverPages(root string) ([]string, error) {
 				return nil
 			}
 
-			pages = append(pages, path)
+			pages = append(
+				pages,
+				path,
+			)
+
 			return nil
 		},
 	)

@@ -3,8 +3,8 @@ package build
 import (
 	"encoding/xml"
 	"os"
-	"strings"
 	"path/filepath"
+	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/config"
 )
@@ -89,8 +89,21 @@ func BuildRSS(
 		data...,
 	)
 
+	output := filepath.Join(
+		root,
+		"dist",
+		"feed.xml",
+	)
+
+	if err := os.MkdirAll(
+		filepath.Dir(output),
+		0755,
+	); err != nil {
+		return err
+	}
+
 	return os.WriteFile(
-		"dist/feed.xml",
+		output,
 		data,
 		0644,
 	)
@@ -108,6 +121,7 @@ type SitemapURL struct {
 }
 
 func BuildSitemap(
+	root string,
 	cfg *config.Config,
 	index *SiteIndex,
 ) error {
@@ -117,7 +131,10 @@ func BuildSitemap(
 	sitemap.XMLNS =
 		"http://www.sitemaps.org/schemas/sitemap/0.9"
 
-	base := cfg.BaseURL
+	base := strings.TrimRight(
+		cfg.BaseURL,
+		"/",
+	)
 
 	for _, page := range index.Pages {
 
@@ -129,10 +146,9 @@ func BuildSitemap(
 
 		if !page.Date.IsZero() {
 
-			entry.LastMod =
-				page.Date.Format(
-					"2006-01-02",
-				)
+			entry.LastMod = page.Date.Format(
+				"2006-01-02",
+			)
 		}
 
 		sitemap.URLs = append(
@@ -146,7 +162,6 @@ func BuildSitemap(
 		"",
 		"  ",
 	)
-
 	if err != nil {
 		return err
 	}
@@ -156,11 +171,21 @@ func BuildSitemap(
 		data...,
 	)
 
+	output := filepath.Join(
+		root,
+		"dist",
+		"sitemap.xml",
+	)
+
+	if err := os.MkdirAll(
+		filepath.Dir(output),
+		0755,
+	); err != nil {
+		return err
+	}
+
 	return os.WriteFile(
-		filepath.Join(
-			"dist",
-			"sitemap.xml",
-		),
+		output,
 		data,
 		0644,
 	)

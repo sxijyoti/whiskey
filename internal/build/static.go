@@ -69,7 +69,11 @@ func copyDir(srcRoot, dstRoot string) error {
 	)
 }
 
-func CopyStatic(siteRoot, theme string) error {
+func CopyStatic(
+	siteRoot,
+	theme string,
+) error {
+
 	themeStatic := filepath.Join(
 		"themes",
 		theme,
@@ -81,18 +85,23 @@ func CopyStatic(siteRoot, theme string) error {
 		"static",
 	)
 
-	// copy theme first
+	dist := filepath.Join(
+		siteRoot,
+		"dist",
+	)
+
+	// Copy theme assets first.
 	if err := copyDir(
 		themeStatic,
-		"dist",
+		dist,
 	); err != nil {
 		return err
 	}
 
-	// then site overrides
+	// Site assets override theme assets.
 	if err := copyDir(
 		siteStatic,
-		"dist",
+		dist,
 	); err != nil {
 		return err
 	}
