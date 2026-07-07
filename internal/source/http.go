@@ -27,19 +27,9 @@ func (h HTTP) Fetch() ([]byte, error) {
 		return nil, err
 	}
 
-	// if shouldExtractMarkdown(h.URL) {
-	// 	return transform.FetchMarkdown(
-	// 		h.URL,
-	// 	)
-	// }
-
-	fmt.Println("[http] fetching:", h.URL)
-
 	if shouldExtractMarkdown(h.URL) {
-		fmt.Println("[http] using defuddle")
 		return transform.FetchMarkdown(h.URL)
 	}
-	fmt.Println("[debug] using direct http")
 
 	req, err := http.NewRequest(
 		http.MethodGet,

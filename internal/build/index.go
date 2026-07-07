@@ -276,3 +276,15 @@ func GarbageCollectWorkspace(
 
 	return nil
 }
+
+func (si *SiteIndex) FilteredPages(failedPaths map[string]bool) []Page {
+	var valid []Page
+	for _, p := range si.Pages {
+		// assuming p.Slug or an explicit p.Path is trackable
+		if failedPaths[p.Slug] { 
+			continue
+		}
+		valid = append(valid, p)
+	}
+	return valid
+}

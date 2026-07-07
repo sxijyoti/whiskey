@@ -122,87 +122,55 @@ func BuildPage(
 	)
 }
 
-func BuildSite(
-	root string,
-) error {
-
-	if err := EnsureWorkspace(
-		root,
-	); err != nil {
+func BuildSite(root string) error {
+	if err := EnsureWorkspace(root); err != nil {
 		return err
 	}
 
-	cfg, err := config.Load(
-		root,
-	)
+	cfg, err := config.Load(root)
 	if err != nil {
 		return err
 	}
 
-	contentRoot := filepath.Join(
-		root,
-		"content",
-	)
-
-	pages, err := DiscoverPages(
-		contentRoot,
-	)
+	contentRoot := filepath.Join(root, "content")
+	pages, err := DiscoverPages(contentRoot)
 	if err != nil {
 		return err
 	}
 
-	g, err := graph.BuildSiteGraph(
-		root,
-		cfg.Theme,
-	)
+	// 1. Build initial complete index for navigation context
+	index, err := BuildIndex(root, pages)
 	if err != nil {
 		return err
 	}
 
-	manifest, err := source.LoadManifest(
-		root,
-	)
+	cfg.Nav = BuildNav(index)
+
+	g, err := graph.BuildSiteGraph(root, cfg.Theme)
 	if err != nil {
 		return err
 	}
 
-	materialized, err := MaterializeSources(
-		root,
-		g,
-		manifest,
-	)
-	if err := GarbageCollectWorkspace(
-		root,
-		g,
-		manifest,
-	); err != nil {
-		return err
-	}
-
-	index, err := BuildIndex(
-		root,
-		pages,
-	)
+	manifest, err := source.LoadManifest(root)
 	if err != nil {
 		return err
 	}
 
-	cfg.Nav = BuildNav(
-		index,
-	)
+	materialized, err := MaterializeSources(root, g, manifest)
+	if err := GarbageCollectWorkspace(root, g, manifest); err != nil {
+		return err
+	}
+
+	var builtPages []string
+	failedPages := make(map[string]bool) // Track failed pages explicitly
 
 	for _, page := range pages {
-
-		raw, err := os.ReadFile(
-			page,
-		)
+		raw, err := os.ReadFile(page)
 		if err != nil {
 			return err
 		}
 
-		doc, err := parser.ParseFrontmatter(
-			raw,
-		)
+		doc, err := parser.ParseFrontmatter(raw)
 		if err != nil {
 			return err
 		}
@@ -211,37 +179,25 @@ func BuildSite(
 			continue
 		}
 
-		output, err := pageOutputPath(
-			root,
-			contentRoot,
-			page,
-		)
+		output, err := pageOutputPath(root, contentRoot, page)
 		if err != nil {
 			return err
 		}
 
+		// Calculate relative slug matching the index keying approach
+		rel, _ := filepath.Rel(contentRoot, page)
+		slug := strings.TrimSuffix(rel, filepath.Ext(rel))
+
 		skip := false
-
-		for _, dep := range g.Dependencies(
-			page,
-		) {
-
+		for _, dep := range g.Dependencies(page) {
 			if materialized.OfflineCached[dep] {
 				continue
 			}
 
 			if _, failed := materialized.Failed[dep]; failed {
-
-				_ = os.Remove(
-					output,
-				)
-
-				fmt.Printf(
-					"[build] skipped %s (missing %s)\n",
-					page,
-					dep,
-				)
-
+				_ = os.Remove(output)
+				fmt.Printf("[build] skipped %s (missing %s)\n", page, dep)
+				failedPages[slug] = true
 				skip = true
 				break
 			}
@@ -251,63 +207,40 @@ func BuildSite(
 			continue
 		}
 
-		if err := BuildPage(
-			root,
-			cfg,
-			doc,
-			output,
-		); err != nil {
-
-			_ = os.Remove(
-				output,
-			)
-
-			fmt.Printf(
-				"[build] failed %s: %v\n",
-				page,
-				err,
-			)
-
+		if err := BuildPage(root, cfg, doc, output); err != nil {
+			_ = os.Remove(output)
+			fmt.Printf("[build] failed %s: %v\n", page, err)
+			failedPages[slug] = true
 			continue
 		}
+
+		builtPages = append(builtPages, page)
 	}
 
-	if err := BuildTags(
-		root,
-		cfg,
-		index,
-	); err != nil {
+	// 2. Re-instantiate a clean SiteIndex passing only successful paths 
+	// to secondary artifact builders to completely eliminate ghost entries.
+	cleanIndex, err := BuildIndex(root, builtPages)
+	if err != nil {
 		return err
 	}
 
-	if err := BuildRSS(
-		root,
-		cfg,
-		index,
-	); err != nil {
+	if err := BuildTags(root, cfg, cleanIndex); err != nil {
 		return err
 	}
 
-	if err := BuildSitemap(
-		root,
-		cfg,
-		index,
-	); err != nil {
+	if err := BuildRSS(root, cfg, cleanIndex); err != nil {
 		return err
 	}
 
-	if err := BuildCollections(
-		root,
-		cfg,
-		index,
-	); err != nil {
+	if err := BuildSitemap(root, cfg, cleanIndex); err != nil {
 		return err
 	}
 
-	if err := CopyStatic(
-		root,
-		cfg.Theme,
-	); err != nil {
+	if err := BuildCollections(root, cfg, cleanIndex); err != nil {
+		return err
+	}
+
+	if err := CopyStatic(root, cfg.Theme); err != nil {
 		return err
 	}
 

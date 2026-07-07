@@ -52,6 +52,7 @@ func IncrementalBuild(
 		return err
 	}
 
+	// This initial index serves the global Navigation layout.
 	index, err := BuildIndex(
 		root,
 		allPages,
@@ -143,11 +144,9 @@ func IncrementalBuild(
 		switch reason {
 
 		case "layout":
-
 			fmt.Println("[build] full rebuild (layout changed)")
 
 		case "config":
-
 			fmt.Println("[build] full rebuild (config changed)")
 
 		default:
@@ -164,7 +163,6 @@ func IncrementalBuild(
 		); err != nil {
 			return err
 		}
-
 
 		return fingerprint.Save(
 			filepath.Join(
@@ -235,7 +233,6 @@ func IncrementalBuild(
 				return err
 			}
 
-
 			return fingerprint.Save(
 				filepath.Join(
 					root,
@@ -247,7 +244,6 @@ func IncrementalBuild(
 		}
 
 		fmt.Println("[build] nothing changed")
-
 		return nil
 	}
 
@@ -270,6 +266,7 @@ func IncrementalBuild(
 	}
 
 	var pagesToBuild []string
+	failedIncrementalPages := make(map[string]bool)
 
 	for _, page := range dirty {
 
@@ -286,6 +283,9 @@ func IncrementalBuild(
 		if doc.Meta.Draft {
 			continue
 		}
+
+		rel, _ := filepath.Rel(contentRoot, page)
+		slug := strings.TrimSuffix(rel, filepath.Ext(rel))
 
 		skip := false
 		for _, dep := range g.Dependencies(page) {
@@ -307,6 +307,7 @@ func IncrementalBuild(
 					page,
 					dep,
 				)
+				failedIncrementalPages[slug] = true
 				skip = true
 				break
 			}
@@ -341,17 +342,56 @@ func IncrementalBuild(
 				contentRoot,
 				page,
 			); err != nil {
-				return err
+				rel, _ := filepath.Rel(contentRoot, page)
+				slug := strings.TrimSuffix(rel, filepath.Ext(rel))
+				failedIncrementalPages[slug] = true
+				
+				output, errPath := pageOutputPath(root, contentRoot, page)
+				if errPath == nil {
+					_ = os.Remove(output)
+				}
+				
+				fmt.Printf("[build] failed to rebuild %s: %v\n", page, err)
+				continue
 			}
 		}
 	}
 
-	if len(filteredDirty) > 0 {
+	// Always rebuild secondary indexes if assets, page changes, or structural dirty steps occurred
+	if len(filteredDirty) > 0 || len(pagesToBuild) > 0 {
+
+		var fullyVerifiedPages []string
+
+		for _, p := range allPages {
+			rel, _ := filepath.Rel(contentRoot, p)
+			slug := strings.TrimSuffix(rel, filepath.Ext(rel))
+
+			// Check if it failed during this specific execution step
+			if failedIncrementalPages[slug] {
+				continue
+			}
+
+			// Verify the output file actually physically exists in the distribution directory
+			output, err := pageOutputPath(root, contentRoot, p)
+			if err != nil {
+				continue
+			}
+
+			if _, err := os.Stat(output); err == nil {
+				fullyVerifiedPages = append(fullyVerifiedPages, p)
+			}
+		}
+
+		// Generate a isolated, metadata-clean tracking index
+		cleanIncrementalIndex, err := BuildIndex(root, fullyVerifiedPages)
+		if err != nil {
+			return err
+		}
 
 		if err := BuildCollections(
 			root,
 			cfg,
-			index,
+			cleanIncrementalIndex,
 		); err != nil {
 			return err
 		}
@@ -359,7 +399,7 @@ func IncrementalBuild(
 		if err := BuildTags(
 			root,
 			cfg,
-			index,
+			cleanIncrementalIndex,
 		); err != nil {
 			return err
 		}
@@ -367,7 +407,7 @@ func IncrementalBuild(
 		if err := BuildRSS(
 			root,
 			cfg,
-			index,
+			cleanIncrementalIndex,
 		); err != nil {
 			return err
 		}
@@ -375,7 +415,7 @@ func IncrementalBuild(
 		if err := BuildSitemap(
 			root,
 			cfg,
-			index,
+			cleanIncrementalIndex,
 		); err != nil {
 			return err
 		}
@@ -431,9 +471,7 @@ func rebuildPage(
 		doc,
 		output,
 	); err != nil {
-
 		_ = os.Remove(output)
-
 		return err
 	}
 
