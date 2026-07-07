@@ -83,7 +83,7 @@ func MaterializeSources(
 		if exists {
 
 			oldMeta = &source.Metadata{
-				ETag: entry.State["etag"],
+				ETag:         entry.State["etag"],
 				LastModified: entry.State["last_modified"],
 			}
 		}
@@ -144,34 +144,6 @@ func MaterializeSources(
 			src,
 			meta,
 		)
-		if err != nil {
-
-			if source.WorkspaceExists(
-				root,
-				src.ID(),
-			) {
-
-				offlineCached[src.ID()] = true
-
-				fmt.Printf(
-					"[source] %s (cached)\n",
-					src.ID(),
-				)
-
-				continue
-			}
-
-			failed[src.ID()] = err
-
-			fmt.Printf(
-				"[source] %s (failed): %v\n",
-				src.ID(),
-				err,
-			)
-
-			continue
-		}
-
 		if err != nil {
 
 			if source.WorkspaceExists(

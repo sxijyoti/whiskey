@@ -153,7 +153,11 @@ func BuildSite(
 		g,
 		manifest,
 	)
-	if err != nil {
+	if err := GarbageCollectWorkspace(
+		root,
+		g,
+		manifest,
+	); err != nil {
 		return err
 	}
 
