@@ -8,6 +8,7 @@ import (
 func Materialize(
 	root string,
 	src Source,
+	meta *Metadata,
 ) (*Materialized, error) {
 
 	meta, err := src.Metadata()

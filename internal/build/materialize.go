@@ -78,10 +78,99 @@ func MaterializeSources(
 
 		entry, exists := manifest.Sources[src.ID()]
 
+		var oldMeta *source.Metadata
+
+		if exists {
+
+			oldMeta = &source.Metadata{
+				ETag: entry.State["etag"],
+				LastModified: entry.State["last_modified"],
+			}
+		}
+
+		var meta *source.Metadata
+
+		if conditional, ok := src.(source.ConditionalSource); ok {
+
+			meta, err = conditional.ConditionalMetadata(
+				oldMeta,
+			)
+
+		} else {
+
+			meta, err = src.Metadata()
+		}
+
+		if err != nil {
+
+			if source.WorkspaceExists(
+				root,
+				src.ID(),
+			) {
+
+				offlineCached[src.ID()] = true
+
+				fmt.Printf(
+					"[source] %s (cached)\n",
+					src.ID(),
+				)
+
+				continue
+			}
+
+			failed[src.ID()] = err
+
+			fmt.Printf(
+				"[source] %s (failed): %v\n",
+				src.ID(),
+				err,
+			)
+
+			continue
+		}
+
+		if meta.NotModified {
+
+			fmt.Printf(
+				"[source] %s (cached)\n",
+				src.ID(),
+			)
+
+			continue
+		}
+
 		result, err := source.Materialize(
 			root,
 			src,
+			meta,
 		)
+		if err != nil {
+
+			if source.WorkspaceExists(
+				root,
+				src.ID(),
+			) {
+
+				offlineCached[src.ID()] = true
+
+				fmt.Printf(
+					"[source] %s (cached)\n",
+					src.ID(),
+				)
+
+				continue
+			}
+
+			failed[src.ID()] = err
+
+			fmt.Printf(
+				"[source] %s (failed): %v\n",
+				src.ID(),
+				err,
+			)
+
+			continue
+		}
 
 		if err != nil {
 

@@ -176,3 +176,70 @@ func validateURL(
 
 	return nil
 }
+
+func (h HTTP) ConditionalMetadata(
+	old *Metadata,
+) (*Metadata, error) {
+
+	if err := validateURL(
+		h.URL,
+	); err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(
+		http.MethodHead,
+		h.URL,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if old != nil {
+
+		if old.ETag != "" {
+			req.Header.Set(
+				"If-None-Match",
+				old.ETag,
+			)
+		}
+
+		if old.LastModified != "" {
+			req.Header.Set(
+				"If-Modified-Since",
+				old.LastModified,
+			)
+		}
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotModified {
+
+		return &Metadata{
+			ETag: old.ETag,
+			LastModified: old.LastModified,
+			NotModified: true,
+		}, nil
+	}
+
+	if resp.StatusCode < http.StatusOK ||
+		resp.StatusCode >= http.StatusMultipleChoices {
+
+		return nil, fmt.Errorf(
+			"%s: %s",
+			h.URL,
+			resp.Status,
+		)
+	}
+
+	return &Metadata{
+		ETag: resp.Header.Get("ETag"),
+		LastModified: resp.Header.Get("Last-Modified"),
+	}, nil
+}
