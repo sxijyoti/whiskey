@@ -4,7 +4,6 @@ import (
 	htmltemplate "html/template"
 	"os"
 	"path/filepath"
-	"strings"
 	"fmt"
 
 	"github.com/sxijyoti/whiskey/internal/config"
@@ -105,7 +104,9 @@ func BuildPage(
 	)
 }
 
-func BuildSite(root string) error {
+func BuildSite(
+	root string,
+) error {
 
 	if err := EnsureWorkspace(
 		root,
@@ -113,7 +114,9 @@ func BuildSite(root string) error {
 		return err
 	}
 
-	cfg, err := config.Load(root)
+	cfg, err := config.Load(
+		root,
+	)
 	if err != nil {
 		return err
 	}
@@ -138,16 +141,19 @@ func BuildSite(root string) error {
 		return err
 	}
 
-	manifest, err := source.LoadManifest(root)
+	manifest, err := source.LoadManifest(
+		root,
+	)
 	if err != nil {
 		return err
 	}
 
-	if err := MaterializeSources(
+	materialized, err := MaterializeSources(
 		root,
 		g,
 		manifest,
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
 
@@ -159,26 +165,22 @@ func BuildSite(root string) error {
 		return err
 	}
 
-	nav := BuildNav(index)
-	
-	cfg.Nav = nav
+	cfg.Nav = BuildNav(
+		index,
+	)
 
 	for _, page := range pages {
 
-		rel, err := filepath.Rel(
-			contentRoot,
+		raw, err := os.ReadFile(
 			page,
 		)
 		if err != nil {
 			return err
 		}
 
-		raw, err := os.ReadFile(page)
-		if err != nil {
-			return err
-		}
-
-		doc, err := parser.ParseFrontmatter(raw)
+		doc, err := parser.ParseFrontmatter(
+			raw,
+		)
 		if err != nil {
 			return err
 		}
@@ -187,29 +189,44 @@ func BuildSite(root string) error {
 			continue
 		}
 
-		slug := strings.TrimSuffix(
-			rel,
-			filepath.Ext(rel),
+		output, err := pageOutputPath(
+			root,
+			contentRoot,
+			page,
 		)
+		if err != nil {
+			return err
+		}
 
-		var output string
+		skip := false
 
-		if slug == "index" {
+		for _, dep := range g.Dependencies(
+			page,
+		) {
 
-			output = filepath.Join(
-				root,
-				"dist",
-				"index.html",
-			)
+			if materialized.OfflineCached[dep] {
+				continue
+			}
 
-		} else {
+			if _, failed := materialized.Failed[dep]; failed {
 
-			output = filepath.Join(
-				root,
-				"dist",
-				slug,
-				"index.html",
-			)
+				_ = os.Remove(
+					output,
+				)
+
+				fmt.Printf(
+					"[build] skipped %s (missing %s)\n",
+					page,
+					dep,
+				)
+
+				skip = true
+				break
+			}
+		}
+
+		if skip {
+			continue
 		}
 
 		if err := BuildPage(
@@ -218,7 +235,18 @@ func BuildSite(root string) error {
 			doc,
 			output,
 		); err != nil {
-			return err
+
+			_ = os.Remove(
+				output,
+			)
+
+			fmt.Printf(
+				"[build] failed %s: %v\n",
+				page,
+				err,
+			)
+
+			continue
 		}
 	}
 

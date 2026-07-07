@@ -1,6 +1,7 @@
 package source
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -14,7 +15,15 @@ func (h HTTP) ID() string {
 	return h.URL
 }
 
+var client = &http.Client{}
+
 func (h HTTP) Fetch() ([]byte, error) {
+
+	if err := validateURL(
+		h.URL,
+	); err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequest(
 		http.MethodGet,
@@ -35,45 +44,66 @@ func (h HTTP) Fetch() ([]byte, error) {
 		"no-cache",
 	)
 
-	client := &http.Client{}
-
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
 
-	return io.ReadAll(resp.Body)
+	// Reject non-success responses.
+	if resp.StatusCode < http.StatusOK ||
+		resp.StatusCode >= http.StatusMultipleChoices {
+
+		return nil, fmt.Errorf(
+			"%s: %s",
+			h.URL,
+			resp.Status,
+		)
+	}
+
+	return io.ReadAll(
+		resp.Body,
+	)
 }
 
 func (h HTTP) Metadata() (*Metadata, error) {
+
+	if err := validateURL(
+		h.URL,
+	); err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequest(
 		http.MethodHead,
 		h.URL,
 		nil,
 	)
-
 	if err != nil {
 		return nil, err
 	}
-
-	client := &http.Client{}
 
 	resp, err := client.Do(req)
-
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
+
+	// Reject non-success responses.
+	if resp.StatusCode < http.StatusOK ||
+		resp.StatusCode >= http.StatusMultipleChoices {
+
+		return nil, fmt.Errorf(
+			"%s: %s",
+			h.URL,
+			resp.Status,
+		)
+	}
 
 	return &Metadata{
 		ETag: resp.Header.Get(
 			"ETag",
 		),
-
 		LastModified: resp.Header.Get(
 			"Last-Modified",
 		),
@@ -109,4 +139,40 @@ func (HTTPFactory) New(
 	return HTTP{
 		URL: ref,
 	}
+}
+
+func validateURL(
+	url string,
+) error {
+
+	if strings.HasPrefix(
+		url,
+		"https://github.com/",
+	) &&
+		strings.Contains(
+			url,
+			"/blob/",
+		) {
+
+		raw := strings.Replace(
+			url,
+			"https://github.com/",
+			"https://raw.githubusercontent.com/",
+			1,
+		)
+
+		raw = strings.Replace(
+			raw,
+			"/blob/",
+			"/",
+			1,
+		)
+
+		return fmt.Errorf(
+			"github blob URLs are not directly fetchable.\nDid you mean:\n\n%s",
+			raw,
+		)
+	}
+
+	return nil
 }

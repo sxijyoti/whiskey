@@ -79,15 +79,17 @@ func IncrementalBuild(
 		return err
 	}
 
-	if err := MaterializeSources(
+	materialized, err := MaterializeSources(
 		root,
 		g,
 		manifest,
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
 
 	changedSources, err := fingerprint.ChangedSources(
+		root,
 		g,
 		store,
 	)
@@ -281,6 +283,34 @@ func IncrementalBuild(
 			continue
 		}
 
+		skip := false
+		for _, dep := range g.Dependencies(page) {
+			if materialized.OfflineCached[dep] {
+				continue
+			}
+
+			if _, failed := materialized.Failed[dep]; failed {
+				output, err := pageOutputPath(
+					root,
+					contentRoot,
+					page,
+				)
+				if err == nil {
+					_ = os.Remove(output)
+				}
+				fmt.Printf(
+					"[build] skipped %s (missing %s)\n",
+					page,
+					dep,
+				)
+				skip = true
+				break
+			}
+		}
+		if skip {
+			continue
+		}
+
 		pagesToBuild = append(
 			pagesToBuild,
 			page,
@@ -382,7 +412,8 @@ func rebuildPage(
 		return nil
 	}
 
-	rel, err := filepath.Rel(
+	output, err := pageOutputPath(
+		root,
 		contentRoot,
 		page,
 	)
@@ -390,35 +421,52 @@ func rebuildPage(
 		return err
 	}
 
+	if err := BuildPage(
+		root,
+		cfg,
+		doc,
+		output,
+	); err != nil {
+
+		_ = os.Remove(output)
+
+		return err
+	}
+
+	return nil
+}
+
+func pageOutputPath(
+	root string,
+	contentRoot string,
+	page string,
+) (string, error) {
+
+	rel, err := filepath.Rel(
+		contentRoot,
+		page,
+	)
+	if err != nil {
+		return "", err
+	}
+
 	slug := strings.TrimSuffix(
 		rel,
 		filepath.Ext(rel),
 	)
 
-	var output string
-
 	if slug == "index" {
-
-		output = filepath.Join(
+		return filepath.Join(
 			root,
 			"dist",
 			"index.html",
-		)
-
-	} else {
-
-		output = filepath.Join(
-			root,
-			"dist",
-			slug,
-			"index.html",
-		)
+		), nil
 	}
 
-	return BuildPage(
+	return filepath.Join(
 		root,
-		cfg,
-		doc,
-		output,
-	)
+		"dist",
+		slug,
+		"index.html",
+	), nil
 }

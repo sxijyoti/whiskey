@@ -70,6 +70,7 @@ var checkCmd = &cobra.Command{
 		}
 
 		changed, err := fingerprint.ChangedSources(
+			root,
 			g,
 			store,
 		)
