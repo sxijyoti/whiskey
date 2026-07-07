@@ -27,6 +27,20 @@ func (h HTTP) Fetch() ([]byte, error) {
 		return nil, err
 	}
 
+	// if shouldExtractMarkdown(h.URL) {
+	// 	return transform.FetchMarkdown(
+	// 		h.URL,
+	// 	)
+	// }
+
+	fmt.Println("[http] fetching:", h.URL)
+
+	if shouldExtractMarkdown(h.URL) {
+		fmt.Println("[http] using defuddle")
+		return transform.FetchMarkdown(h.URL)
+	}
+	fmt.Println("[debug] using direct http")
+
 	req, err := http.NewRequest(
 		http.MethodGet,
 		h.URL,
@@ -62,22 +76,7 @@ func (h HTTP) Fetch() ([]byte, error) {
 		)
 	}
 
-	body, err := io.ReadAll(
-		resp.Body,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	contentType := resp.Header.Get(
-		"Content-Type",
-	)
-
-	return transform.Process(
-		h.URL,
-		contentType,
-		body,
-	)
+	return io.ReadAll(resp.Body)
 }
 
 func (h HTTP) Metadata() (*Metadata, error) {
@@ -86,6 +85,12 @@ func (h HTTP) Metadata() (*Metadata, error) {
 		h.URL,
 	); err != nil {
 		return nil, err
+	}
+
+	if shouldExtractMarkdown(
+		h.URL,
+	) {
+		return &Metadata{}, nil
 	}
 
 	req, err := http.NewRequest(
@@ -201,6 +206,12 @@ func (h HTTP) ConditionalMetadata(
 		return nil, err
 	}
 
+	if shouldExtractMarkdown(
+		h.URL,
+	) {
+		return &Metadata{}, nil
+	}
+
 	req, err := http.NewRequest(
 		http.MethodHead,
 		h.URL,
@@ -260,4 +271,44 @@ func (h HTTP) ConditionalMetadata(
 			"Last-Modified",
 		),
 	}, nil
+}
+
+func shouldExtractMarkdown(
+	url string,
+) bool {
+
+	switch {
+
+	case strings.Contains(
+		url,
+		"raw.githubusercontent.com",
+	):
+		return false
+
+	case strings.Contains(
+		url,
+		"githubusercontent.com",
+	):
+		return false
+
+	case strings.HasSuffix(
+		url,
+		".md",
+	):
+		return false
+
+	case strings.HasSuffix(
+		url,
+		".markdown",
+	):
+		return false
+
+	case strings.HasSuffix(
+		url,
+		".txt",
+	):
+		return false
+	}
+
+	return true
 }
