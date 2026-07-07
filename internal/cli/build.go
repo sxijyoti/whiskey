@@ -20,11 +20,7 @@ var buildCmd = &cobra.Command{
 		args []string,
 	) error {
 
-		root := "site"
-
-		if len(args) == 1 {
-			root = args[0]
-		}
+		root := siteRoot(args)
 
 		source.Offline = offline
 

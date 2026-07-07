@@ -22,11 +22,7 @@ var checkCmd = &cobra.Command{
 		args []string,
 	) error {
 
-		root := "site"
-
-		if len(args) == 1 {
-			root = args[0]
-		}
+		root := siteRoot(args)
 
 		cfg, err := config.Load(root)
 		if err != nil {

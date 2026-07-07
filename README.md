@@ -9,11 +9,13 @@ Usage:
 
 Available Commands:
   build       Build the site
-  check       Validate site configuration
+  check       Inspect site dependencies
   clean       Clean generated artifacts
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
-  serve       Start a local development server
+  serve       Build and serve a Whiskey site
+  sync        Synchronize remote sources
+  theme       Manage local themes
   version     Version information about whiskey
 
 Flags:

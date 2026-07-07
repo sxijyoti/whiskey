@@ -11,11 +11,7 @@ var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Clean generated artifacts",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		root := "site"
-
-		if len(args) == 1 {
-			root = args[0]
-		}
+		root := siteRoot(args)
 
 		_ = os.RemoveAll(
 			filepath.Join(root, "dist"),
