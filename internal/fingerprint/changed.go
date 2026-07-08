@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/config"
@@ -88,13 +89,16 @@ func ConfigHash(
 ) string {
 
 	input :=
-		cfg.Theme +
-			cfg.BaseURL +
-			cfg.Title +
-			cfg.Description
+		cfg.Theme + "|" +
+			cfg.BaseURL + "|" +
+			cfg.Title + "|" +
+			cfg.Description + "|" +
+			strconv.FormatBool(
+				cfg.RSS.Enabled,
+			)
 
 	for _, c := range cfg.RSS.Collections {
-		input += c
+		input += "|" + c
 	}
 
 	return SHA256([]byte(input))

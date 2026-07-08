@@ -1,18 +1,18 @@
 package build
 
 import (
+	"fmt"
 	htmltemplate "html/template"
 	"os"
 	"path/filepath"
-	"fmt"
 	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/dependency"
-	"github.com/sxijyoti/whiskey/internal/parser"
-	"github.com/sxijyoti/whiskey/internal/template"
-	"github.com/sxijyoti/whiskey/internal/source"
 	"github.com/sxijyoti/whiskey/internal/graph"
+	"github.com/sxijyoti/whiskey/internal/parser"
+	"github.com/sxijyoti/whiskey/internal/source"
+	"github.com/sxijyoti/whiskey/internal/template"
 )
 
 func BuildPage(
@@ -144,7 +144,7 @@ func BuildSite(root string) error {
 		return err
 	}
 
-	cfg.Nav = BuildNav(index)
+	cfg.Nav = BuildNav(cfg, index)
 
 	g, err := graph.BuildSiteGraph(root, cfg.Theme)
 	if err != nil {
@@ -217,7 +217,7 @@ func BuildSite(root string) error {
 		builtPages = append(builtPages, page)
 	}
 
-	// 2. Re-instantiate a clean SiteIndex passing only successful paths 
+	// 2. Re-instantiate a clean SiteIndex passing only successful paths
 	// to secondary artifact builders to completely eliminate ghost entries.
 	cleanIndex, err := BuildIndex(root, builtPages)
 	if err != nil {

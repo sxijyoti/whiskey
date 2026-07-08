@@ -34,6 +34,10 @@ func BuildRSS(
 	index *SiteIndex,
 ) error {
 
+	if !cfg.RSS.Enabled {
+		return nil
+	}
+
 	allowed := map[string]bool{}
 
 	for _, collection := range cfg.RSS.Collections {

@@ -6,6 +6,7 @@ base_url = "http://localhost:8080"
 theme = "terminal"
 
 [rss]
+enabled = false
 collections = [
     "blog"
 ]

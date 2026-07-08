@@ -6,18 +6,37 @@
 	content="width=device-width, initial-scale=1"
 >
 
-<title>
-{{ .Title }} | {{ .Site.Title }}
-</title>
+{{ if eq .Title .Site.Title }}
+<title>{{ .Title }}</title>
+{{ else }}
+<title>{{ .Title }} | {{ .Site.Title }}</title>
+{{ end }}
 
+{{ if .Description }}
 <meta
 	name="description"
 	content="{{ .Description }}"
 >
+{{ end }}
 
 <link
 	rel="stylesheet"
 	href="/css/main.css"
 >
+
+{{ if .Site.RSSURL }}
+<link
+	rel="alternate"
+	type="application/rss+xml"
+	title="{{ .Site.Title }}"
+	href="{{ .Site.RSSURL }}"
+>
+{{ end }}
+
+<link
+    rel="icon"
+    type="image/x-icon"
+    href="/images/favicon.ico"
+/>
 
 {{ end }}

@@ -62,6 +62,7 @@ func IncrementalBuild(
 	}
 
 	cfg.Nav = BuildNav(
+		cfg,
 		index,
 	)
 
@@ -345,12 +346,12 @@ func IncrementalBuild(
 				rel, _ := filepath.Rel(contentRoot, page)
 				slug := strings.TrimSuffix(rel, filepath.Ext(rel))
 				failedIncrementalPages[slug] = true
-				
+
 				output, errPath := pageOutputPath(root, contentRoot, page)
 				if errPath == nil {
 					_ = os.Remove(output)
 				}
-				
+
 				fmt.Printf("[build] failed to rebuild %s: %v\n", page, err)
 				continue
 			}

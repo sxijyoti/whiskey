@@ -7,6 +7,7 @@ import (
 )
 
 func BuildNav(
+	cfg *config.Config,
 	index *SiteIndex,
 ) []config.NavItem {
 
@@ -24,13 +25,9 @@ func BuildNav(
 
 		if page.Collection != "" {
 
-			if _, ok := collections[
-				page.Collection,
-			]; !ok {
+			if _, ok := collections[page.Collection]; !ok {
 
-				collections[
-					page.Collection,
-				] = config.NavItem{
+				collections[page.Collection] = config.NavItem{
 
 					Title: DisplayName(
 						page.Collection,
@@ -49,9 +46,7 @@ func BuildNav(
 			continue
 		}
 
-		contentPages[
-			page.Slug,
-		] = config.NavItem{
+		contentPages[page.Slug] = config.NavItem{
 
 			Title: page.Title,
 
@@ -62,7 +57,7 @@ func BuildNav(
 	items := []config.NavItem{
 		{
 			Title: "Home",
-			URL: "/",
+			URL:   "/",
 		},
 	}
 
@@ -116,18 +111,19 @@ func BuildNav(
 			items,
 			config.NavItem{
 				Title: "Tags",
-				URL: "/tags/",
+				URL:   "/tags/",
 			},
 		)
 	}
 
-	if len(index.Pages) > 0 {
+	if cfg.RSS.Enabled &&
+		len(index.Pages) > 0 {
 
 		items = append(
 			items,
 			config.NavItem{
 				Title: "RSS",
-				URL: "/feed.xml",
+				URL:   cfg.RSSURL,
 			},
 		)
 	}

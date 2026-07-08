@@ -9,6 +9,7 @@ import (
 )
 
 type RSSConfig struct {
+	Enabled     bool     `toml:"enabled"`
 	Collections []string `toml:"collections"`
 }
 
@@ -24,6 +25,7 @@ type Config struct {
 	Theme       string `toml:"theme"`
 	Nav         []NavItem
 	RSS         RSSConfig `toml:"rss"`
+	RSSURL      string
 }
 
 func Load(siteRoot string) (*Config, error) {
@@ -50,6 +52,11 @@ func Load(siteRoot string) (*Config, error) {
 		return nil, err
 	}
 
+	if cfg.RSS.Enabled &&
+		len(cfg.RSS.Collections) > 0 {
+		cfg.RSSURL = "/feed.xml"
+	}
+
 	return cfg, nil
 }
 
@@ -62,6 +69,7 @@ func Default() *Config {
 		Theme:       "minimal",
 
 		RSS: RSSConfig{
+			Enabled: true,
 			Collections: []string{
 				"blog",
 			},
