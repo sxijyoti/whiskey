@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sort"
 
 	"github.com/sxijyoti/whiskey/internal/config"
 	"github.com/sxijyoti/whiskey/internal/graph"
@@ -26,16 +27,44 @@ func ChangedSources(
 		switch node.Type {
 
 		case graph.SourceNode:
-
-			data, err := source.ReadWorkspace(
-				root,
-				node.ID,
+			var (
+				data []byte
+				err  error
 			)
+
+			if strings.HasPrefix(
+				node.ID,
+				"local:",
+			) {
+
+				path := filepath.Join(
+					root,
+					"content",
+					strings.TrimPrefix(
+						node.ID,
+						"local:",
+					),
+				)
+
+				data, err = os.ReadFile(
+					path,
+				)
+
+			} else {
+
+				data, err = source.ReadWorkspace(
+					root,
+					node.ID,
+				)
+			}
+
 			if err != nil {
 				continue
 			}
 
-			hash := SHA256(data)
+			hash := SHA256(
+				data,
+			)
 
 			old := store[node.ID]
 
@@ -78,6 +107,7 @@ func ChangedSources(
 				}
 			}
 		}
+		
 	}
 
 	return changed, nil
@@ -152,5 +182,60 @@ func UpdateLocalPages(
 
 			return nil
 		},
+	)
+}
+
+func PageSetHash(
+	pages []string,
+) string {
+
+	pages = append([]string(nil), pages...)
+
+	sort.Strings(
+		pages,
+	)
+
+	return SHA256(
+		[]byte(
+			strings.Join(
+				pages,
+				"\n",
+			),
+		),
+	)
+}
+
+func GraphHash(
+	g *graph.Graph,
+) string {
+
+	var items []string
+
+	for id := range g.Nodes {
+		items = append(
+			items,
+			"N:"+id,
+		)
+	}
+
+	for _, edge := range g.Edges {
+
+		items = append(
+			items,
+			"E:"+edge.From+"->"+edge.To,
+		)
+	}
+
+	sort.Strings(
+		items,
+	)
+
+	return SHA256(
+		[]byte(
+			strings.Join(
+				items,
+				"\n",
+			),
+		),
 	)
 }

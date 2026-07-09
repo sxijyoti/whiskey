@@ -22,6 +22,25 @@ func BuildPage(
 	output string,
 ) error {
 
+	resolveLocalInclude := func(path string) ([]byte, error) {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+
+		// Only Markdown files can contain Whiskey frontmatter.
+		if filepath.Ext(path) != ".md" {
+			return raw, nil
+		}
+
+		doc, err := parser.ParseFrontmatter(raw)
+		if err != nil {
+			return nil, err
+		}
+
+		return []byte(doc.Body), nil
+	}
+
 	resolvedBody, err := dependency.ResolveIncludes(
 		doc.Body,
 		func(ref string) ([]byte, error) {
@@ -32,26 +51,17 @@ func BuildPage(
 					"local:",
 				)
 
-				return os.ReadFile(path)
+				return resolveLocalInclude(path)
 			}
 
 			if !source.WorkspaceExists(
 				siteRoot,
 				ref,
 			) {
-
 				return nil, fmt.Errorf(
 					"workspace missing for %s",
 					ref,
 				)
-			}
-
-			if strings.HasPrefix(ref, "local:") {
-				path := strings.TrimPrefix(
-					ref,
-					"local:",
-				)
-				return os.ReadFile(path)
 			}
 
 			return source.ReadWorkspace(
