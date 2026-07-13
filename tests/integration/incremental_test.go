@@ -3,7 +3,6 @@ package integration
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/sxijyoti/whiskey/tests/helpers"
@@ -113,11 +112,8 @@ func TestIncremental_AssetEdit(t *testing.T) {
 
 	res2 := helpers.BuildCmd(t, site.Dir)
 	helpers.AssertIncrementalBuild(t, res2)
-	helpers.AssertOutputContains(t, res2, "[asset]")
-	// Should copy asset but NOT build dirty pages
-	if strings.Contains(res2.Stdout, "dirty page") {
-		t.Fatalf("Expected no page rebuilds for asset-only change, got: %s", res2.Stdout)
-	}
+	helpers.AssertOutputContains(t, res2, "Dirty assets: 1")
+	helpers.AssertOutputContains(t, res2, "Dirty pages: 0")
 	helpers.AssertContains(t, site.Dir, "dist/style.css", "blue")
 }
 

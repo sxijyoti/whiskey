@@ -19,7 +19,7 @@ func TestDependencyGraph_CycleDetection(t *testing.T) {
 	res := helpers.BuildCmd(t, site.Dir)
 
 	helpers.AssertBuildFails(t, res)
-	helpers.AssertOutputContains(t, res, "cycle detected")
+	helpers.AssertOutputContains(t, res, "Cycle detected")
 }
 
 func TestDependencyGraph_OrphanGarbageCollection(t *testing.T) {

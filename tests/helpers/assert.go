@@ -74,19 +74,19 @@ func AssertOutputContains(t *testing.T, res CmdResult, expected string) {
 func AssertNothingChanged(t *testing.T, res CmdResult) {
 	t.Helper()
 	AssertBuildSucceeds(t, res)
-	AssertOutputContains(t, res, "nothing changed")
+	AssertOutputContains(t, res, "no changes")
 }
 
 func AssertIncrementalBuild(t *testing.T, res CmdResult) {
 	t.Helper()
 	AssertBuildSucceeds(t, res)
-	AssertOutputContains(t, res, "incremental")
+	AssertOutputContains(t, res, "Incremental")
 }
 
 func AssertFullBuild(t *testing.T, res CmdResult, reason string) {
 	t.Helper()
 	AssertBuildSucceeds(t, res)
-	AssertOutputContains(t, res, "full rebuild")
+	AssertOutputContains(t, res, "Full rebuild")
 	if reason != "" {
 		AssertOutputContains(t, res, reason)
 	}

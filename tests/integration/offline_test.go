@@ -28,5 +28,6 @@ func TestOffline_BuildWithoutCacheFails(t *testing.T) {
 	// Run offline build - should fail
 	res := helpers.BuildOfflineCmd(t, site.Dir)
 	helpers.AssertBuildFails(t, res)
-	helpers.AssertOutputContains(t, res, "missing https://example.com/nocache.md")
+	helpers.AssertOutputContains(t, res, "Remote source unavailable")
+	helpers.AssertOutputContains(t, res, "https://example.com/nocache.md")
 }

@@ -102,7 +102,7 @@ func TestRegression_LayoutChangeFullRebuild(t *testing.T) {
 	site.Build()
 
 	res := helpers.BuildCmd(t, site.Dir)
-	helpers.AssertFullBuild(t, res, "layout/partial changed")
+	helpers.AssertFullBuild(t, res, "layout changed")
 }
 
 func TestRegression_PartialChangeFullRebuild(t *testing.T) {
@@ -119,7 +119,7 @@ func TestRegression_PartialChangeFullRebuild(t *testing.T) {
 	site.Build()
 
 	res := helpers.BuildCmd(t, site.Dir)
-	helpers.AssertFullBuild(t, res, "layout/partial changed")
+	helpers.AssertFullBuild(t, res, "partial changed")
 }
 
 func TestRegression_RelativePathsAndCanonicalIncludes(t *testing.T) {
@@ -247,7 +247,7 @@ func TestRegression_RealCyclicIncludesStillFail(t *testing.T) {
 
 	res := helpers.BuildFullCmd(t, site.Dir)
 	helpers.AssertBuildFails(t, res)
-	helpers.AssertOutputContains(t, res, "cycle detected")
+	helpers.AssertOutputContains(t, res, "Cycle detected")
 }
 
 func TestRegression_GitHubBlobURLNormalizesToRaw(t *testing.T) {
