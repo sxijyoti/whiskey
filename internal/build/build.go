@@ -164,7 +164,7 @@ func BuildSiteWithReason(root, reason string) error {
 	}
 
 	materialized, materializeErr := MaterializeSources(root, g, manifest)
-	logSources(materialized)
+	logSources(nil, materialized)
 
 	if err := GarbageCollectWorkspace(root, g, manifest); err != nil {
 		return err

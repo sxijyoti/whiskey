@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/config"
@@ -145,17 +146,18 @@ func IncrementalBuild(root string) error {
 			return fingerprint.Save(fingerprintPath(root), store)
 		}
 		start := logBuildStart("Incremental build", "no changes")
-		logSources(materialized)
+		logSources(nil, materialized)
 		logDirtyPages(0)
 		logDirtyAssets(0)
 		logBuildDone("Incremental", start, 0, materialized)
 		return fingerprint.Save(fingerprintPath(root), store)
 	}
 
+	localChanged := changedLocalSources(root, g, changedNodes)
 	start := logBuildStart("Incremental build", incrementalReason(g, changedNodes, materialized))
 	logDirtyPages(len(dirtyPages))
 	logDirtyAssets(len(dirtyAssets))
-	logSources(materialized)
+	logSources(localChanged, materialized)
 
 	// --- Copy dirty assets -----------------------------------------------
 
@@ -245,6 +247,32 @@ func incrementalReason(g *graph.Graph, changed []string, materialized *Materiali
 	}
 
 	return "site changed"
+}
+
+// changedLocalSources returns a sorted slice of site-root-relative paths for
+// every local SourceNode in changedNodes. Local source IDs have the form
+// "local:/absolute/path"; the prefix is stripped and the path is made relative
+// to root so the output is legible (e.g. "content/getting-started.md").
+func changedLocalSources(root string, g *graph.Graph, changed []string) []string {
+	var paths []string
+	for _, id := range changed {
+		n := g.Nodes[id]
+		if n == nil || n.Type != graph.SourceNode {
+			continue
+		}
+		if !strings.HasPrefix(id, "local:") {
+			continue
+		}
+		abs := strings.TrimPrefix(id, "local:")
+		rel, err := filepath.Rel(root, abs)
+		if err != nil {
+			// Fall back to the absolute path if Rel fails.
+			rel = abs
+		}
+		paths = append(paths, filepath.ToSlash(rel))
+	}
+	sort.Strings(paths)
+	return paths
 }
 
 func changedDraftPages(g *graph.Graph, changed []string) []string {

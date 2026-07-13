@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -27,27 +28,56 @@ func logBuildDone(kind string, start time.Time, rendered int, sources *Materiali
 	}
 }
 
-func logSources(result *MaterializationResult) {
-	if result == nil {
+// logSources prints the [sources] diagnostic block.
+//
+// localChanged is a sorted list of site-root-relative paths for local
+// dependency sources (e.g. @include'd files) that changed.
+// result carries updated/failed remote sources from MaterializeSources.
+//
+// The entire block is omitted when neither local nor remote sources changed.
+func logSources(localChanged []string, result *MaterializationResult) {
+	remoteUpdated := 0
+	remoteFailed := 0
+	if result != nil {
+		remoteUpdated = len(result.Updated)
+		remoteFailed = len(result.Failed)
+	}
+
+	if len(localChanged) == 0 && remoteUpdated == 0 && remoteFailed == 0 {
+		// Nothing changed — omit the section entirely.
 		return
 	}
 
 	fmt.Println("[sources]")
-	if len(result.Updated) == 0 && len(result.Failed) == 0 {
-		fmt.Println("  No remote changes")
-		return
+
+	if len(localChanged) > 0 {
+		fmt.Println("  Local:")
+		for _, p := range localChanged {
+			fmt.Printf("    %s\n", p)
+		}
 	}
 
-	if len(result.Updated) > 0 {
-		fmt.Println("  Updated:")
+	if remoteUpdated > 0 {
+		if len(localChanged) > 0 {
+			fmt.Println()
+		}
+		fmt.Println("  Remote:")
 		for _, ref := range result.Updated {
 			fmt.Printf("    %s\n", sourceName(ref))
 		}
 	}
 
-	if len(result.Failed) > 0 {
+	if remoteFailed > 0 {
+		if len(localChanged) > 0 || remoteUpdated > 0 {
+			fmt.Println()
+		}
 		fmt.Println("  Failed:")
+		refs := make([]string, 0, len(result.Failed))
 		for ref := range result.Failed {
+			refs = append(refs, ref)
+		}
+		sort.Strings(refs)
+		for _, ref := range refs {
 			fmt.Printf("    %s\n", sourceName(ref))
 		}
 	}

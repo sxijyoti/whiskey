@@ -133,7 +133,7 @@ Whiskey separates **source synchronization** from **page rendering**.
           Dirty Set Calculation
                    │
                    ▼
-        Source Materialization
+         Source Materialization
                    │
                    ▼
           .whiskey/workspace/
@@ -146,6 +146,40 @@ Whiskey separates **source synchronization** from **page rendering**.
 ```
 
 Because rendering consumes only workspace artifacts, builds become deterministic and independent of network availability.
+
+### Key Architectural Components
+
+The codebase is organized into highly modular packages under the `internal/` directory:
+
+1. **Parser (`internal/parser`)**: Extracts YAML frontmatter metadata, expands template shortcodes (such as `image` and `youtube`), and compiles Markdown content into HTML.
+2. **Dependency Graph (`internal/graph`)**: A Directed Acyclic Graph (DAG) representing layouts, partial templates, assets, pages, and includes as nodes. Edges represent dependencies (e.g. `PageNode` -> `LayoutNode`).
+3. **Workspace & Materialization (`internal/source`)**: Manages the cached HTTP local workspace under `.whiskey/workspace/`. It implements conditional HTTP caching (verifying ETags and Last-Modified timestamps in `.whiskey/manifest.json` before performing downloads).
+4. **Fingerprint Store (`internal/fingerprint`)**: Tracks cryptographic SHA-256 hashes of all inputs in `.whiskey/fingerprints.json` to detect file updates.
+5. **Incremental Planner (`internal/planner`)**: Decides if a layout or configuration change demands a full build, otherwise calculates the minimal set of dirty pages by analyzing the reverse path of changed inputs.
+6. **HTML Renderer (`internal/template`)**: Loads theme HTML layouts and compiles output pages. Handles local and remote include expansion recursively.
+
+---
+
+# Frontmatter
+
+Every content Markdown file defines metadata using YAML frontmatter. The default fields are:
+
+```yaml
+title: "My Page Title"
+description: "A description of the page content"
+date: 2026-07-13
+layout: "page"
+draft: false
+tags:
+  - general
+```
+
+- **`title`**: The display name of the page, injected into headers and `<title>` tags.
+- **`description`**: A summary of the page, injected into HTML meta tags.
+- **`date`**: Publication date used for sorting collections.
+- **`layout`**: The template design used (e.g. `page`, `post`, `index`).
+- **`draft`**: If `true`, the page is tracked for changes but is not rendered in publishing mode (and is hidden from collections, navigation, feeds, and sitemaps).
+- **`tags`**: Lists taxonomies for grouping and tag lists.
 
 ---
 
