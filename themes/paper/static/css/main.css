@@ -96,6 +96,7 @@ body {
     padding: 2rem 0 3rem;
     color: var(--muted);
     font-size: 0.9rem;
+    text-align: center;
 }
 
 h1,

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/sxijyoti/whiskey/internal/transform"
@@ -138,52 +139,72 @@ func (HTTPFactory) Supports(
 		strings.HasPrefix(
 			ref,
 			"https://",
-	)
+		)
 }
 
 func (HTTPFactory) New(
 	ref string,
 ) Source {
+	normalized, err := NormalizeRef(ref)
+	if err != nil {
+		normalized = ref
+	}
 
 	return HTTP{
-		URL: ref,
+		URL: normalized,
 	}
 }
 
-func validateURL(
-	url string,
-) error {
+func NormalizeRef(ref string) (string, error) {
+	if !strings.HasPrefix(ref, "http://") &&
+		!strings.HasPrefix(ref, "https://") {
+		return ref, nil
+	}
 
+	return normalizeGitHubBlobURL(ref)
+}
+
+func normalizeGitHubBlobURL(raw string) (string, error) {
 	if strings.HasPrefix(
-		url,
+		raw,
 		"https://github.com/",
 	) &&
 		strings.Contains(
-			url,
+			raw,
 			"/blob/",
 		) {
 
-		raw := strings.Replace(
-			url,
-			"https://github.com/",
-			"https://raw.githubusercontent.com/",
-			1,
-		)
+		parsed, err := url.Parse(raw)
+		if err != nil {
+			return "", fmt.Errorf("invalid GitHub blob URL %q: %w", raw, err)
+		}
 
-		raw = strings.Replace(
-			raw,
-			"/blob/",
-			"/",
-			1,
-		)
+		parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+		if len(parts) < 5 || parts[2] != "blob" {
+			return "", fmt.Errorf("unsupported GitHub blob URL: %s", raw)
+		}
 
-		return fmt.Errorf(
-			"github blob URLs are not directly fetchable.\nDid you mean:\n\n%s",
-			raw,
-		)
+		normalized := "https://raw.githubusercontent.com/" +
+			parts[0] + "/" +
+			parts[1] + "/" +
+			parts[3] + "/" +
+			strings.Join(parts[4:], "/")
+
+		if parsed.RawQuery != "" {
+			normalized += "?" + parsed.RawQuery
+		}
+
+		return normalized, nil
 	}
 
-	return nil
+	return raw, nil
+}
+
+func validateURL(
+	raw string,
+) error {
+	_, err := NormalizeRef(raw)
+	return err
 }
 
 func (h HTTP) ConditionalMetadata(

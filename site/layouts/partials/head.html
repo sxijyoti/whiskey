@@ -33,10 +33,12 @@
 >
 {{ end }}
 
+{{ if .Site.Favicon }}
 <link
-    rel="icon"
-    type="image/x-icon"
-    href="/images/favicon.ico"
-/>
+	rel="icon"
+	type="image/x-icon"
+	href="{{ .Site.Favicon }}"
+>
+{{ end }}
 
 {{ end }}

@@ -11,8 +11,9 @@ const (
 )
 
 type Node struct {
-	ID   string   `json:"id"`
-	Type NodeType `json:"type"`
+	ID    string   `json:"id"`
+	Type  NodeType `json:"type"`
+	Draft bool     `json:"draft,omitempty"`
 }
 
 type Edge struct {

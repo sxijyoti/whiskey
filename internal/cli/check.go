@@ -65,7 +65,7 @@ var checkCmd = &cobra.Command{
 			)
 		}
 
-		changed, err := fingerprint.ChangedSources(
+		changed, err := fingerprint.ChangedNodes(
 			root,
 			g,
 			store,
@@ -74,7 +74,7 @@ var checkCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Println("Changed Sources")
+		fmt.Println("Changed Nodes")
 		fmt.Println()
 
 		if len(changed) == 0 {
@@ -84,27 +84,15 @@ var checkCmd = &cobra.Command{
 
 		} else {
 
-			for _, src := range changed {
-				fmt.Println(src)
+			for _, node := range changed {
+				fmt.Println(node)
 			}
 
 			fmt.Println()
 		}
 
-		localDirty, err := planner.LocalDirtyPages(
-			filepath.Join(
-				root,
-				"content",
-			),
-			store,
-		)
-		if err != nil {
-			return err
-		}
-
-		dirty := planner.IncrementalDirtySet(
+		dirty := planner.DirtyPages(
 			g,
-			localDirty,
 			changed,
 		)
 

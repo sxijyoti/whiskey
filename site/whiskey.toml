@@ -5,6 +5,8 @@ base_url = "http://localhost:8080"
 
 theme = "terminal"
 
+favicon="images/logo.png"
+
 [rss]
 enabled = false
 collections = [
