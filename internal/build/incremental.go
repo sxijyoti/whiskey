@@ -116,8 +116,7 @@ func IncrementalBuild(root string) error {
 	configHash := fingerprint.ConfigHash(cfg)
 	if store["__config__"].Hash != configHash {
 		store["__config__"] = fingerprint.Entry{Hash: configHash}
-		fmt.Println("[build] full rebuild (config changed)")
-		return fullBuildAndSave(root)
+		return fullBuildAndSave(root, "config changed")
 	}
 
 	// --- Layout or partial changed? → full rebuild -----------------------
@@ -128,8 +127,7 @@ func IncrementalBuild(root string) error {
 			continue
 		}
 		if n.Type == graph.LayoutNode || n.Type == graph.PartialNode {
-			fmt.Println("[build] full rebuild (layout/partial changed)")
-			return fullBuildAndSave(root)
+			return fullBuildAndSave(root, rebuildReason(n.Type))
 		}
 	}
 
@@ -141,19 +139,27 @@ func IncrementalBuild(root string) error {
 
 	if len(dirtyPages) == 0 && len(dirtyDraftPages) == 0 && len(dirtyAssets) == 0 {
 		if _, err := os.Stat(filepath.Join(root, "dist")); os.IsNotExist(err) {
-			fmt.Println("[build] full rebuild (no dist directory)")
-			return fullBuildAndSave(root)
+			return fullBuildAndSave(root, "missing output")
 		}
-		fmt.Println("[build] nothing changed")
+		if !LogNoopBuilds {
+			return fingerprint.Save(fingerprintPath(root), store)
+		}
+		start := logBuildStart("Incremental build", "no changes")
+		logSources(materialized)
+		logDirtyPages(0)
+		logDirtyAssets(0)
+		logBuildDone("Incremental", start, 0, materialized)
 		return fingerprint.Save(fingerprintPath(root), store)
 	}
 
-	fmt.Println("[build] incremental")
+	start := logBuildStart("Incremental build", incrementalReason(g, changedNodes, materialized))
+	logDirtyPages(len(dirtyPages))
+	logDirtyAssets(len(dirtyAssets))
+	logSources(materialized)
 
 	// --- Copy dirty assets -----------------------------------------------
 
 	for _, asset := range dirtyAssets {
-		fmt.Printf("[asset] %s\n", asset)
 		if err := CopyAsset(root, cfg.Theme, asset); err != nil {
 			return err
 		}
@@ -164,10 +170,8 @@ func IncrementalBuild(root string) error {
 	failedPages := make(map[string]bool)
 
 	if len(dirtyPages) > 0 {
-		fmt.Printf("[build] %d dirty page(s)\n", len(dirtyPages))
-
 		for _, page := range dirtyPages {
-			fmt.Printf("[build] %s\n", page)
+			logRenderPage(contentRoot, page)
 			rebuildOnePage(root, cfg, contentRoot, page, g, materialized, failedPages)
 		}
 	}
@@ -196,12 +200,51 @@ func IncrementalBuild(root string) error {
 		return fmt.Errorf("incremental build completed with %d failure(s)", len(failedPages))
 	}
 
+	logBuildDone("Incremental", start, len(dirtyPages), materialized)
+
 	return nil
 }
 
 // fullBuildAndSave runs a complete site build then persists the fingerprint store.
-func fullBuildAndSave(root string) error {
-	return BuildSite(root)
+func fullBuildAndSave(root, reason string) error {
+	return BuildSiteWithReason(root, reason)
+}
+
+func rebuildReason(nodeType graph.NodeType) string {
+	switch nodeType {
+	case graph.LayoutNode:
+		return "layout changed"
+	case graph.PartialNode:
+		return "partial changed"
+	default:
+		return "site changed"
+	}
+}
+
+func incrementalReason(g *graph.Graph, changed []string, materialized *MaterializationResult) string {
+	if materialized != nil && len(materialized.Updated) > 0 {
+		return "remote source updated"
+	}
+
+	for _, id := range changed {
+		n := g.Nodes[id]
+		if n == nil {
+			continue
+		}
+		switch n.Type {
+		case graph.PageNode:
+			return "page changed"
+		case graph.AssetNode:
+			return "asset changed"
+		case graph.SourceNode:
+			if strings.HasPrefix(id, "local:") {
+				return "page changed"
+			}
+			return "remote source updated"
+		}
+	}
+
+	return "site changed"
 }
 
 func changedDraftPages(g *graph.Graph, changed []string) []string {
@@ -236,14 +279,14 @@ func rebuildOnePage(
 
 	raw, err := os.ReadFile(page)
 	if err != nil {
-		fmt.Printf("[build] failed to read %s: %v\n", page, err)
+		logPageError(contentRoot, page, err)
 		failedPages[pageSlug(contentRoot, page)] = true
 		return
 	}
 
 	doc, err := parser.ParseFrontmatter(raw)
 	if err != nil {
-		fmt.Printf("[build] failed to parse %s: %v\n", page, err)
+		logPageError(contentRoot, page, err)
 		failedPages[pageSlug(contentRoot, page)] = true
 		return
 	}
@@ -263,7 +306,7 @@ func rebuildOnePage(
 
 	output, err := pageOutputPath(root, contentRoot, page)
 	if err != nil {
-		fmt.Printf("[build] bad output path for %s: %v\n", page, err)
+		logPageError(contentRoot, page, err)
 		failedPages[pageSlug(contentRoot, page)] = true
 		return
 	}
@@ -277,7 +320,7 @@ func rebuildOnePage(
 		}
 		if _, failed := materialized.Failed[dep]; failed {
 			_ = os.Remove(output)
-			fmt.Printf("[build] skipped %s (missing %s)\n", page, dep)
+			logPageError(contentRoot, page, fmt.Errorf("workspace missing for %s", dep))
 			failedPages[slug] = true
 			return
 		}
@@ -285,7 +328,7 @@ func rebuildOnePage(
 
 	if err := BuildPage(root, cfg, page, doc, output); err != nil {
 		_ = os.Remove(output)
-		fmt.Printf("[build] failed to rebuild %s: %v\n", page, err)
+		logPageError(contentRoot, page, err)
 		failedPages[slug] = true
 	}
 }

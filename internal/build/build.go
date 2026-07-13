@@ -127,6 +127,12 @@ func BuildPage(
 // secondary indexes. Draft pages are skipped during rendering but their
 // dependency edges are already in the graph for tracking purposes.
 func BuildSite(root string) error {
+	return BuildSiteWithReason(root, "manual")
+}
+
+func BuildSiteWithReason(root, reason string) error {
+	start := logBuildStart("Full rebuild", reason)
+
 	if err := EnsureWorkspace(root); err != nil {
 		return err
 	}
@@ -158,6 +164,7 @@ func BuildSite(root string) error {
 	}
 
 	materialized, materializeErr := MaterializeSources(root, g, manifest)
+	logSources(materialized)
 
 	if err := GarbageCollectWorkspace(root, g, manifest); err != nil {
 		return err
@@ -201,7 +208,7 @@ func BuildSite(root string) error {
 			}
 			if _, failed := materialized.Failed[dep]; failed {
 				_ = os.Remove(output)
-				fmt.Printf("[build] skipped %s (missing %s)\n", page, dep)
+				logPageError(contentRoot, page, fmt.Errorf("workspace missing for %s", dep))
 				failedPages[slug] = true
 				skip = true
 				break
@@ -214,7 +221,7 @@ func BuildSite(root string) error {
 
 		if err := BuildPage(root, cfg, page, doc, output); err != nil {
 			_ = os.Remove(output)
-			fmt.Printf("[build] failed %s: %v\n", page, err)
+			logPageError(contentRoot, page, err)
 			failedPages[slug] = true
 			continue
 		}
@@ -247,9 +254,12 @@ func BuildSite(root string) error {
 		}
 
 		if err := BuildPage(root, cfg, page, doc, output); err != nil {
+			logPageError(contentRoot, page, err)
 			return err
 		}
 	}
+
+	logRenderCount(len(builtPages))
 
 	if err := BuildTags(root, cfg, cleanIndex); err != nil {
 		return err
@@ -283,6 +293,8 @@ func BuildSite(root string) error {
 	if len(failedPages) > 0 {
 		return fmt.Errorf("full build completed with %d failure(s)", len(failedPages))
 	}
+
+	logBuildDone("Full rebuild", start, len(builtPages), materialized)
 
 	return nil
 }

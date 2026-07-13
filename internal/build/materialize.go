@@ -39,6 +39,7 @@ func MaterializeSources(
 	offlineCached := make(
 		map[string]bool,
 	)
+	var updated []string
 
 	for _, node := range g.Nodes {
 
@@ -68,11 +69,6 @@ func MaterializeSources(
 				src.ID(),
 			) {
 				offlineCached[src.ID()] = true
-
-				fmt.Printf(
-					"[source] %s (offline)\n",
-					src.ID(),
-				)
 
 				continue
 			}
@@ -118,32 +114,15 @@ func MaterializeSources(
 
 				offlineCached[src.ID()] = true
 
-				fmt.Printf(
-					"[source] %s (cached)\n",
-					src.ID(),
-				)
-
 				continue
 			}
 
 			failed[src.ID()] = err
 
-			fmt.Printf(
-				"[source] %s (failed): %v\n",
-				src.ID(),
-				err,
-			)
-
 			continue
 		}
 
 		if meta.NotModified {
-
-			fmt.Printf(
-				"[source] %s (cached)\n",
-				src.ID(),
-			)
-
 			continue
 		}
 
@@ -161,32 +140,16 @@ func MaterializeSources(
 
 				offlineCached[src.ID()] = true
 
-				fmt.Printf(
-					"[source] %s (cached)\n",
-					src.ID(),
-				)
-
 				continue
 			}
 
 			failed[src.ID()] = err
-
-			fmt.Printf(
-				"[source] %s (failed): %v\n",
-				src.ID(),
-				err,
-			)
 
 			continue
 		}
 
 		if exists &&
 			entry.ContentHash == result.ContentHash {
-			fmt.Printf(
-				"[source] %s (unchanged)\n",
-				src.ID(),
-			)
-
 			continue
 		}
 
@@ -196,11 +159,6 @@ func MaterializeSources(
 			result.Content,
 		); err != nil {
 			failed[src.ID()] = err
-			fmt.Printf(
-				"[source] %s (failed): %v\n",
-				src.ID(),
-				err,
-			)
 			continue
 		}
 
@@ -209,11 +167,7 @@ func MaterializeSources(
 			ContentHash: result.ContentHash,
 		}
 		dirty = true
-
-		fmt.Printf(
-			"[source] %s (updated)\n",
-			src.ID(),
-		)
+		updated = append(updated, src.ID())
 	}
 
 	if dirty {
@@ -228,6 +182,7 @@ func MaterializeSources(
 	return &MaterializationResult{
 		Failed:        failed,
 		OfflineCached: offlineCached,
+		Updated:       updated,
 	}, nil
 }
 
@@ -237,4 +192,6 @@ type MaterializationResult struct {
 	// Source could not be refreshed,
 	// but an existing workspace copy was reused.
 	OfflineCached map[string]bool
+
+	Updated []string
 }

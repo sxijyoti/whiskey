@@ -45,6 +45,11 @@ var serveCmd = &cobra.Command{
 
 		source.Offline = offline
 
+		fmt.Printf("Whiskey %s\n\n", Version)
+		fmt.Printf("Serving http://localhost:%d\n\n", port)
+		fmt.Println("Initial build...")
+		fmt.Println()
+
 		if err := build.IncrementalBuild(root); err != nil {
 			return err
 		}
@@ -60,6 +65,10 @@ var serveCmd = &cobra.Command{
 			Interval: 30 * time.Second,
 		}.Start(func() {
 
+			build.LogNoopBuilds = false
+			defer func() {
+				build.LogNoopBuilds = true
+			}()
 			if err := build.IncrementalBuild(
 				root,
 			); err != nil {
@@ -188,32 +197,27 @@ var serveCmd = &cobra.Command{
 						}
 					}
 
-					fmt.Printf(
-						"[watch] %s changed\n",
-						filepath.Base(event.Name),
-					)
+					name := event.Name
+					if rel, err := filepath.Rel(root, event.Name); err == nil {
+						name = rel
+					}
+
+					fmt.Printf("[watch] %s changed\n", filepath.ToSlash(name))
 
 					changed := event.Name
 
 					debouncer.Run(func(path string) func() {
 						return func() {
 
-							start := time.Now()
-
 							if err := build.IncrementalBuild(root); err != nil {
 
 								fmt.Printf(
-									"[watch] build failed: %v\n",
+									"[error] build failed: %v\n",
 									err,
 								)
 
 								return
 							}
-
-							fmt.Printf(
-								"[watch] build complete (%v)\n",
-								time.Since(start).Round(time.Millisecond),
-							)
 
 							reloader.Broadcast()
 						}
@@ -246,11 +250,8 @@ var serveCmd = &cobra.Command{
 			),
 		)
 
-		fmt.Printf(
-			"Serving %s at http://localhost:%d\n",
-			root,
-			port,
-		)
+		fmt.Println()
+		fmt.Println("Watching for changes...")
 
 		return http.ListenAndServe(
 			fmt.Sprintf(
