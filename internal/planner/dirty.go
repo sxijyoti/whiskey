@@ -2,6 +2,13 @@ package planner
 
 import "github.com/sxijyoti/whiskey/internal/graph"
 
+// DirtyPages returns the set of publishable pages that are transitively
+// reachable from any of the changed nodes via reverse edges in the dependency
+// graph.
+//
+// "Publishable" means the node is a PageNode that is not marked as a draft.
+// Draft pages are still PageNodes in the graph (for dependency tracking) but
+// they are never rendered, so they must not appear in the dirty-page set.
 func DirtyPages(
 	g *graph.Graph,
 	changed []string,
@@ -11,9 +18,12 @@ func DirtyPages(
 
 	for _, node := range changed {
 
-		for _, dep := range g.ReachableFrom(
-			node,
-		) {
+		// If the changed node itself is a PageNode, it must be rebuilt.
+		if n := g.Nodes[node]; n != nil && n.Type == graph.PageNode && !n.Draft {
+			seen[node] = struct{}{}
+		}
+
+		for _, dep := range g.ReachableFrom(node) {
 
 			n := g.Nodes[dep]
 
@@ -25,19 +35,21 @@ func DirtyPages(
 				continue
 			}
 
+			// Draft pages participate in dependency tracking but are never
+			// rendered; exclude them from the rebuild set.
+			if n.Draft {
+				continue
+			}
+
 			seen[dep] = struct{}{}
 		}
 	}
 
-	var pages []string
+	dirty := make([]string, 0, len(seen))
 
 	for page := range seen {
-
-		pages = append(
-			pages,
-			page,
-		)
+		dirty = append(dirty, page)
 	}
 
-	return pages
+	return dirty
 }

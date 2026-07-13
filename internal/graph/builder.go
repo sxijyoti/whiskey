@@ -9,6 +9,7 @@ import (
 
 	"github.com/sxijyoti/whiskey/internal/dependency"
 	"github.com/sxijyoti/whiskey/internal/parser"
+	"github.com/sxijyoti/whiskey/internal/source"
 )
 
 func resolveThemeFile(siteRoot, theme, rel string) string {
@@ -200,29 +201,33 @@ func BuildSiteGraph(
 				return err
 			}
 
-			if doc.Meta.Draft {
-				return nil
-			}
-
+			// Draft pages are still PageNodes: the graph sees them for dependency
+			// propagation. The Published flag controls whether the page is rendered.
 			g.AddNode(
 				path,
 				PageNode,
 			)
 
-			layout := doc.Meta.Layout
+			g.Nodes[path].Draft = doc.Meta.Draft
 
-			if layout == "" {
-				layout = "page"
-			}
+			// Unpublished (draft) pages do not link to layouts or partials because
+			// they are never rendered. They still track their @include dependencies.
+			if !doc.Meta.Draft {
+				layout := doc.Meta.Layout
 
-			if err := addTemplateGraph(
-				g,
-				siteRoot,
-				theme,
-				path,
-				layout,
-			); err != nil {
-				return err
+				if layout == "" {
+					layout = "page"
+				}
+
+				if err := addTemplateGraph(
+					g,
+					siteRoot,
+					theme,
+					path,
+					layout,
+				); err != nil {
+					return err
+				}
 			}
 
 			directives := dependency.Extract(
@@ -230,15 +235,29 @@ func BuildSiteGraph(
 			)
 
 			for _, dir := range directives {
+				ref := dir.Ref
+
+				if strings.HasPrefix(ref, "local:") {
+					resolved, err := dependency.ResolveLocalRef(path, ref)
+					if err != nil {
+						return err
+					}
+					ref = resolved
+				} else {
+					src, err := source.Resolve(ref)
+					if err == nil {
+						ref = src.ID()
+					}
+				}
 
 				g.AddNode(
-					dir.Ref,
+					ref,
 					SourceNode,
 				)
 
 				g.AddEdge(
 					path,
-					dir.Ref,
+					ref,
 				)
 			}
 

@@ -2,8 +2,11 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	pathpkg "path"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -23,6 +26,7 @@ type Config struct {
 	Description string `toml:"description"`
 	BaseURL     string `toml:"base_url"`
 	Theme       string `toml:"theme"`
+	Favicon     string `toml:"favicon"`
 	Nav         []NavItem
 	RSS         RSSConfig `toml:"rss"`
 	RSSURL      string
@@ -38,6 +42,7 @@ func Load(siteRoot string) (*Config, error) {
 	)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
+		normalizePaths(cfg)
 		return cfg, nil
 	}
 
@@ -51,6 +56,8 @@ func Load(siteRoot string) (*Config, error) {
 	if err := Validate(cfg); err != nil {
 		return nil, err
 	}
+
+	normalizePaths(cfg)
 
 	if cfg.RSS.Enabled &&
 		len(cfg.RSS.Collections) > 0 {
@@ -67,6 +74,7 @@ func Default() *Config {
 		Description: "",
 		BaseURL:     "",
 		Theme:       "minimal",
+		Favicon:     "images/favicon.ico",
 
 		RSS: RSSConfig{
 			Enabled: true,
@@ -88,4 +96,28 @@ func Validate(
 	}
 
 	return nil
+}
+
+func normalizePaths(cfg *Config) {
+	if cfg.Favicon == "" {
+		return
+	}
+
+	favicon := strings.ReplaceAll(cfg.Favicon, "\\", "/")
+	if strings.HasPrefix(favicon, "http://") ||
+		strings.HasPrefix(favicon, "https://") {
+		cfg.Favicon = favicon
+		return
+	}
+
+	publicPath := strings.TrimPrefix(pathpkg.Clean(favicon), "/")
+	basePath := ""
+
+	if cfg.BaseURL != "" {
+		if parsed, err := url.Parse(cfg.BaseURL); err == nil {
+			basePath = parsed.Path
+		}
+	}
+
+	cfg.Favicon = pathpkg.Join("/", basePath, publicPath)
 }
