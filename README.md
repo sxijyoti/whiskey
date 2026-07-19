@@ -1,4 +1,4 @@
-# whiskey
+# Whiskey
 
 **A dependency-aware static site generator written in Go.**
 

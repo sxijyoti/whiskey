@@ -36,7 +36,7 @@ func watchIfExists(
 
 var serveCmd = &cobra.Command{
 	Use:   "serve [site-root]",
-	Short: "Build and serve a Whiskey site",
+	Short: "Build and serve a Whiskey site with live reload",
 	Args:  cobra.MaximumNArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
