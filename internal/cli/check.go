@@ -14,7 +14,7 @@ import (
 
 var checkCmd = &cobra.Command{
 	Use:   "check [site-root]",
-	Short: "Inspect site dependencies",
+	Short: "Inspect dependencies and incremental build status",
 	Args:  cobra.MaximumNArgs(1),
 
 	RunE: func(

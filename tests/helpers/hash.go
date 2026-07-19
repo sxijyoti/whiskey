@@ -3,7 +3,6 @@ package helpers
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,7 +31,6 @@ func HashDir(t *testing.T, dir string) string {
 			return err
 		}
 		defer f.Close()
-		io.Copy(h, f)
 		
 		return nil
 	})

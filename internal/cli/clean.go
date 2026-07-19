@@ -9,7 +9,7 @@ import (
 
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
-	Short: "Clean generated artifacts",
+	Short: "Remove generated output and build artifacts",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		root := siteRoot(args)
 
