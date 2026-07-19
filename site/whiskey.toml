@@ -1,7 +1,7 @@
 title = "Whiskey"
 description = "Dependency-aware static site generator"
 
-base_url = "http://localhost:8080"
+base_url = "https://whiskey-ssg.netlify.app"
 
 theme = "terminal"
 

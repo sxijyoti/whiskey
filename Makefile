@@ -46,3 +46,7 @@ fullclean:
 	rm -rf $(SITE)/dist
 	rm -rf $(SITE)/.whiskey
 	rm -rf bin
+
+docs:
+	go build -o bin/whiskey ./cmd/whiskey
+	./bin/whiskey build site
