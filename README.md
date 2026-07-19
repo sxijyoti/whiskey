@@ -2,6 +2,10 @@
 
 **A dependency-aware static site generator written in Go.**
 
+[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://whiskey-ssg.netlify.app)
+[![Go Version](https://img.shields.io/badge/go-1.25.7-00ADD8?logo=go)](https://go.dev/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 `whiskey` is a modern static site generator built around **dependency-aware incremental builds**.
 
 Instead of rebuilding your entire site whenever something changes, `whiskey` constructs a dependency graph connecting content, layouts, partials, assets, and remote sources. When a change occurs, only the pages affected by that change are rebuilt.
