@@ -26,6 +26,9 @@ jobs:
       - name: Run Tests
         run: go test -v -race ./...
 
+      - name: Generate Shell Completions
+        run: make completions
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:
