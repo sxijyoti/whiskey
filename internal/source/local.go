@@ -1,6 +1,6 @@
 package source
 
-import(
+import (
 	"os"
 	"strings"
 )

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify Go Format
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "Go code is not formatted. Please run gofmt."
+            gofmt -d .
+            exit 1
+          fi
+
+      - name: Go Vet
+        run: go vet ./...
+
+      - name: Run Tests
+        run: go test -v -race ./...
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          install-only: true
+          version: "~> v2"
+
+      - name: Validate GoReleaser Config
+        run: make release-check

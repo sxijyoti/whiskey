@@ -1,0 +1,39 @@
+class Whiskey < Formula
+  desc "A dependency-aware static site generator written in Go"
+  homepage "https://github.com/sxijyoti/whiskey"
+  version "__VERSION__"
+  license "MIT"
+
+  on_macos do
+    if Hardware::CPU.intel?
+      url "https://github.com/sxijyoti/whiskey/releases/download/__TAG__/whiskey___VERSION___darwin_amd64.tar.gz"
+      sha256 "__DARWIN_AMD64_SHA256__"
+    end
+    if Hardware::CPU.arm?
+      url "https://github.com/sxijyoti/whiskey/releases/download/__TAG__/whiskey___VERSION___darwin_arm64.tar.gz"
+      sha256 "__DARWIN_ARM64_SHA256__"
+    end
+  end
+
+  on_linux do
+    if Hardware::CPU.intel?
+      url "https://github.com/sxijyoti/whiskey/releases/download/__TAG__/whiskey___VERSION___linux_amd64.tar.gz"
+      sha256 "__LINUX_AMD64_SHA256__"
+    end
+    if Hardware::CPU.arm?
+      url "https://github.com/sxijyoti/whiskey/releases/download/__TAG__/whiskey___VERSION___linux_arm64.tar.gz"
+      sha256 "__LINUX_ARM64_SHA256__"
+    end
+  end
+
+  def install
+    bin.install "whiskey"
+    bash_completion.install "completions/whiskey.bash" => "whiskey"
+    zsh_completion.install "completions/whiskey.zsh" => "_whiskey"
+    fish_completion.install "completions/whiskey.fish"
+  end
+
+  test do
+    assert_match "Whiskey #{version}", shell_output("#{bin}/whiskey version")
+  end
+end

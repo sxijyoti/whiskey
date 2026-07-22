@@ -1,15 +1,15 @@
 package cli
 
 import (
-	"github.com/spf13/cobra"
 	"fmt"
+	"github.com/spf13/cobra"
 	"os"
 )
 
 var rootCmd = &cobra.Command{
-	Use: "whiskey",
+	Use:   "whiskey",
 	Short: "static site generator",
-	Long: "Whiskey is a static site generator written in Go.",
+	Long:  "Whiskey is a static site generator written in Go.",
 }
 
 func Execute() {

@@ -1,15 +1,15 @@
 package build
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
-	"fmt"
 
-	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/graph"
+	"github.com/sxijyoti/whiskey/internal/parser"
 	"github.com/sxijyoti/whiskey/internal/source"
 )
 
@@ -50,7 +50,7 @@ func BuildIndex(
 
 	index := &SiteIndex{
 		Collections: make(map[string][]Page),
-		Tags:         make(map[string][]Page),
+		Tags:        make(map[string][]Page),
 	}
 
 	for _, page := range pages {
@@ -281,7 +281,7 @@ func (si *SiteIndex) FilteredPages(failedPaths map[string]bool) []Page {
 	var valid []Page
 	for _, p := range si.Pages {
 		// assuming p.Slug or an explicit p.Path is trackable
-		if failedPaths[p.Slug] { 
+		if failedPaths[p.Slug] {
 			continue
 		}
 		valid = append(valid, p)

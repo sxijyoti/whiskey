@@ -1,0 +1,49 @@
+# GoReleaser v2 Configuration for Whiskey
+# Reference: https://goreleaser.com/customization/
+
+version: 2
+
+project_name: whiskey
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: whiskey
+    binary: whiskey
+    main: ./cmd/whiskey
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/sxijyoti/whiskey/internal/cli.Version={{.Version}}
+
+archives:
+  - id: whiskey
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    files:
+      - LICENSE*
+      - README*
+      - completions/*
+
+checksum:
+  name_template: "whiskey_checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "Merge pull request"
+      - "Merge branch"

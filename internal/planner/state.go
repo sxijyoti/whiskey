@@ -3,8 +3,8 @@ package planner
 import (
 	"encoding/json"
 	"os"
-	"time"
 	"path/filepath"
+	"time"
 )
 
 type State struct {

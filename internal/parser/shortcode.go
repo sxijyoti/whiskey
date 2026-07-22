@@ -74,9 +74,7 @@ func renderShortcode(
 	original string,
 ) string {
 
-	renderer, ok := renderers[
-		shortcode.Name,
-	]
+	renderer, ok := renderers[shortcode.Name]
 
 	if !ok {
 		return original
@@ -239,12 +237,10 @@ func normalizeYoutubeID(
 		"youtu.be/",
 	) {
 
-		return value[
-			strings.LastIndex(
-				value,
-				"/",
-			)+1:
-		]
+		return value[strings.LastIndex(
+			value,
+			"/",
+		)+1:]
 	}
 
 	if strings.Contains(
