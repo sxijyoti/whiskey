@@ -5,6 +5,20 @@ draft: true
 
 ## Installation
 
+### Homebrew
+
+```bash
+brew tap sxijyoti/whiskey
+brew install whiskey
+```
+
+Verify the installation:
+
+```bash
+whiskey --help
+```
+
+### Build from Source
 Clone the repository and build Whiskey:
 
 ```bash

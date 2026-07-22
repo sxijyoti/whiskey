@@ -5,7 +5,7 @@ var Offline bool
 type Metadata struct {
 	ETag         string
 	LastModified string
-	NotModified   bool
+	NotModified  bool
 }
 
 type Source interface {

@@ -17,8 +17,8 @@ func FetchMarkdown(
 
 	endpoint :=
 		"https://defuddle.md/" +
-		url.PathEscape(target)
-	
+			url.PathEscape(target)
+
 	req, err := http.NewRequest(
 		http.MethodGet,
 		endpoint,

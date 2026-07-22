@@ -15,11 +15,11 @@ type Manifest struct {
 }
 
 type ManifestEntry struct {
-    Workspace string `json:"workspace"`
+	Workspace string `json:"workspace"`
 
-    ContentHash string `json:"content_hash"`
+	ContentHash string `json:"content_hash"`
 
-    State map[string]string `json:"state"`
+	State map[string]string `json:"state"`
 }
 
 func ManifestPath(
