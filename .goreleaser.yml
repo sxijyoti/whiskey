@@ -1,0 +1,68 @@
+version: 2
+
+project_name: whiskey
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: whiskey
+    main: ./cmd/whiskey
+    binary: whiskey
+
+    goos:
+      - linux
+      - darwin
+
+    goarch:
+      - amd64
+      - arm64
+
+    env:
+      - CGO_ENABLED=0
+
+    ldflags:
+      - -s -w -X github.com/sxijyoti/whiskey/internal/cli.Version={{ .Version }}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true
+
+release:
+  github:
+    owner: sxijyoti
+    name: whiskey
+
+brews:
+  - name: whiskey
+
+    repository:
+      owner: sxijyoti
+      name: homebrew-whiskey
+
+    homepage: "https://github.com/sxijyoti/whiskey"
+    description: "Dependency-aware static site generator written in Go."
+    license: "MIT"
+
+    directory: Formula
+
+    install: |
+      bin.install "whiskey"
+
+    test: |
+      system "#{bin}/whiskey", "version"
+
+    commit_author:
+      name: github-actions[bot]
+      email: 41898282+github-actions[bot]@users.noreply.github.com
