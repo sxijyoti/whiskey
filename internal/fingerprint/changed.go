@@ -99,5 +99,9 @@ func ConfigHash(cfg *config.Config) string {
 		input += "|" + c
 	}
 
+	for _, item := range cfg.ExplicitNav {
+		input += "|" + item.Title + ":" + item.URL
+	}
+
 	return SHA256([]byte(input))
 }

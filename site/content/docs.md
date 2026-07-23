@@ -109,6 +109,10 @@ theme = "terminal"
 
 favicon = "images/logo.png"
 
+[[nav]]
+title = "Blogs"
+url = "/blog/"
+
 [rss]
 enabled = false
 collections = [
@@ -260,26 +264,28 @@ Generated files:
 
 ## Includes
 
-Whiskey can reuse content from local files or remote URLs. This is through `@include` command.
+Whiskey can reuse content from local files or remote URLs. This is through `@include` command as shown below:
 
-### Local Includes
 
-```markdown
-@ include local:getting-started.md
-```
+{{< image
+src="/images/include.png"
+width="700"
+caption="include command"
+>}}
 
-Paths are resolved relative to the current document.
-
-### Remote Includes
-
-```markdown
-@ include https://raw.githubusercontent.com/user/repo/main/README.md
-```
-
-Remote content is downloaded automatically and cached for future builds.
 
 ---
+## Shortcode
 
+Shortcodes extend Markdown with reusable components that are expanded during rendering. The syntax is as follows:
+
+{{< image
+src="/images/shortcode.png"
+width="700"
+caption="shortcode command"
+>}}
+
+---
 ## Offline Mode
 
 Offline mode uses cached remote content instead of making network requests.

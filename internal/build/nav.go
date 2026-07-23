@@ -11,6 +11,10 @@ func BuildNav(
 	index *SiteIndex,
 ) []config.NavItem {
 
+	if len(cfg.ExplicitNav) > 0 {
+		return cfg.ExplicitNav
+	}
+
 	contentPages := map[string]config.NavItem{}
 
 	collections := map[string]config.NavItem{}

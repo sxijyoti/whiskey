@@ -17,16 +17,17 @@ type RSSConfig struct {
 }
 
 type NavItem struct {
-	Title string
-	URL   string
+	Title string `toml:"title"`
+	URL   string `toml:"url"`
 }
 
 type Config struct {
-	Title       string `toml:"title"`
-	Description string `toml:"description"`
-	BaseURL     string `toml:"base_url"`
-	Theme       string `toml:"theme"`
-	Favicon     string `toml:"favicon"`
+	Title       string    `toml:"title"`
+	Description string    `toml:"description"`
+	BaseURL     string    `toml:"base_url"`
+	Theme       string    `toml:"theme"`
+	Favicon     string    `toml:"favicon"`
+	ExplicitNav []NavItem `toml:"nav"`
 	Nav         []NavItem
 	RSS         RSSConfig `toml:"rss"`
 	RSSURL      string
