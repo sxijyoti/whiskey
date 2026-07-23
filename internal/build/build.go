@@ -120,7 +120,17 @@ func BuildPage(
 		return err
 	}
 
-	return os.WriteFile(output, page, 0644)
+	if err := os.WriteFile(output, page, 0644); err != nil {
+		return err
+	}
+
+	if filepath.Base(output) == "404.html" {
+		altOutput := filepath.Join(siteRoot, "dist", "404", "index.html")
+		_ = os.MkdirAll(filepath.Dir(altOutput), 0755)
+		_ = os.WriteFile(altOutput, page, 0644)
+	}
+
+	return nil
 }
 
 // BuildSite performs a full site build: all pages, static assets, and

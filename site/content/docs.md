@@ -217,6 +217,7 @@ Example frontmatter:
 title: My Blog Post
 layout: post
 draft: false
+unlisted: false
 
 collection: blog
 
@@ -238,6 +239,8 @@ Tags generate individual tag pages together with a tag index:
 /tags/release/
 /tags/news/
 ```
+
+`unlisted` or `hidden` can be used to hide pages from explicity showing up on the site.
 
 ---
 

@@ -183,7 +183,12 @@ tags:
 - **`date`**: Publication date used for sorting collections.
 - **`layout`**: The template design used (e.g. `page`, `post`, `index`).
 - **`draft`**: If `true`, the page is tracked for changes but is not rendered in publishing mode (and is hidden from collections, navigation, feeds, and sitemaps).
+- **`unlisted`** (or **`hidden`**): If `true`, the page is rendered to HTML so it can be accessed directly by URL, but is omitted from auto-generated navigation menus, RSS feeds, sitemap XML, and collection/tag lists (perfect for custom 404 pages or secret easter egg pages!).
 - **`tags`**: Lists taxonomies for grouping and tag lists.
+
+### Custom 404 & Unlisted Pages
+- **Custom 404 Page**: Create `content/404.md` to define a custom error page. It is compiled into `dist/404.html` (and `dist/404/index.html`), automatically excluded from navigation, RSS feeds, and sitemaps, and served by `whiskey serve` whenever a missing route is requested.
+- **Easter Eggs & Unlisted Pages**: Add `unlisted: true` (or `hidden: true`) to frontmatter for any page you want published at a direct URL without appearing in auto-generated UI lists or navigation.
 
 ---
 

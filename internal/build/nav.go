@@ -21,7 +21,15 @@ func BuildNav(
 
 	seenTags := false
 
+	hasListedPages := false
+
 	for _, page := range index.Pages {
+
+		if page.Unlisted || page.Slug == "404" {
+			continue
+		}
+
+		hasListedPages = true
 
 		if len(page.Tags) > 0 {
 			seenTags = true
@@ -120,8 +128,7 @@ func BuildNav(
 		)
 	}
 
-	if cfg.RSS.Enabled &&
-		len(index.Pages) > 0 {
+	if cfg.RSS.Enabled && hasListedPages {
 
 		items = append(
 			items,

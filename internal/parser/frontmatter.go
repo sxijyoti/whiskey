@@ -14,6 +14,12 @@ type Frontmatter struct {
 	Collection  string    `yaml:"collection"`
 	Layout      string    `yaml:"layout"`
 	Draft       bool      `yaml:"draft"`
+	Unlisted    bool      `yaml:"unlisted"`
+	Hidden      bool      `yaml:"hidden"`
+}
+
+func (f Frontmatter) IsUnlisted() bool {
+	return f.Unlisted || f.Hidden
 }
 
 type Document struct {

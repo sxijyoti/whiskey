@@ -406,6 +406,10 @@ func rebuildIndexes(
 			return err
 		}
 
+		if doc.Meta.Draft {
+			continue
+		}
+
 		output, err := pageOutputPath(root, contentRoot, page)
 		if err != nil {
 			return err
@@ -478,6 +482,9 @@ func pageOutputPath(root, contentRoot, page string) (string, error) {
 	slug := strings.TrimSuffix(rel, filepath.Ext(rel))
 	if slug == "index" {
 		return filepath.Join(root, "dist", "index.html"), nil
+	}
+	if slug == "404" {
+		return filepath.Join(root, "dist", "404.html"), nil
 	}
 	return filepath.Join(root, "dist", slug, "index.html"), nil
 }

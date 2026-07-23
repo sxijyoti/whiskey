@@ -28,7 +28,8 @@ type Page struct {
 	Date      time.Time
 	DateLabel string
 
-	Draft bool
+	Draft    bool
+	Unlisted bool
 }
 
 type SiteIndex struct {
@@ -96,6 +97,8 @@ func BuildIndex(
 			)
 		}
 
+		isUnlisted := doc.Meta.IsUnlisted() || slug == "404"
+
 		p := Page{
 			Title:       doc.Meta.Title,
 			Description: doc.Meta.Description,
@@ -111,7 +114,12 @@ func BuildIndex(
 			Date:      doc.Meta.Date,
 			DateLabel: dateLabel,
 
-			Draft: doc.Meta.Draft,
+			Draft:    doc.Meta.Draft,
+			Unlisted: isUnlisted,
+		}
+
+		if p.Unlisted {
+			continue
 		}
 
 		index.Pages = append(

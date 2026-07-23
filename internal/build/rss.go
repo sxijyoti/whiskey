@@ -48,6 +48,10 @@ func BuildRSS(
 
 	for _, page := range index.Pages {
 
+		if page.Unlisted || page.Slug == "404" {
+			continue
+		}
+
 		if !allowed[page.Collection] {
 			continue
 		}
@@ -141,6 +145,10 @@ func BuildSitemap(
 	)
 
 	for _, page := range index.Pages {
+
+		if page.Unlisted || page.Slug == "404" {
+			continue
+		}
 
 		url := base + page.URL
 
