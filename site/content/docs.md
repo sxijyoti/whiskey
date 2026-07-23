@@ -329,6 +329,12 @@ whiskey build --full
 
 ---
 
+## Deployment
+
+If you wanna look at how to deploy using whiskey, click [here](/deployment/).
+
+---
+
 ## Next Steps
 
 Curious about how Whiskey works internally?
